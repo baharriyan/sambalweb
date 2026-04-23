@@ -1,6 +1,5 @@
 import { Link } from "wouter";
 import { Button } from "@/components/ui/button";
-import { motion } from "framer-motion";
 import { ChevronRight, ShieldCheck, Flame, Loader2 } from "lucide-react";
 import { trpc } from "@/lib/trpc";
 
@@ -32,9 +31,6 @@ export default function HeroSection() {
 
   return (
     <section className="relative min-h-[90vh] flex items-center pt-20 pb-16 px-4 bg-[#faf9f6] overflow-hidden">
-      {/* Texture Overlay */}
-      <div className="absolute inset-0 opacity-[0.03] pointer-events-none bg-[url('https://www.transparenttextures.com/patterns/natural-paper.png')] -z-10" />
-
       {/* Background Decorative Gradients */}
       <div className="absolute top-0 right-0 w-[50%] h-full bg-gradient-to-l from-orange-100/30 to-transparent -z-10" />
       <div className="absolute -top-24 -right-24 w-96 h-96 bg-red-100 rounded-full blur-3xl opacity-40 animate-pulse" />
@@ -42,12 +38,8 @@ export default function HeroSection() {
       <div className="max-w-7xl mx-auto w-full">
         <div className="grid lg:grid-cols-2 gap-12 items-center">
           {/* Left Content */}
-          <div className="space-y-8 relative z-10 text-center lg:text-left">
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.6 }}
-            >
+          <div className="space-y-8 relative z-10 text-center lg:text-left animate-fade-in-up">
+            <div>
               <div className="inline-flex items-center gap-2 px-4 py-2 bg-red-50 text-red-600 rounded-full mb-6 border border-red-100">
                 <Flame className="w-4 h-4" />
                 <span className="text-xs font-bold uppercase tracking-widest">
@@ -63,13 +55,11 @@ export default function HeroSection() {
               <p className="text-lg md:text-xl text-slate-600 max-w-xl mx-auto lg:mx-0 leading-relaxed">
                 {content.description}
               </p>
-            </motion.div>
+            </div>
 
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.6, delay: 0.2 }}
-              className="flex flex-col sm:flex-row items-center justify-center lg:justify-start gap-4 pt-4"
+            <div
+              className="flex flex-col sm:flex-row items-center justify-center lg:justify-start gap-4 pt-4 animate-fade-in-up"
+              style={{ animationDelay: "0.2s" }}
             >
               <Link href="/catalog">
                 <Button
@@ -88,16 +78,11 @@ export default function HeroSection() {
                   Cara Pesan
                 </Button>
               </a>
-            </motion.div>
+            </div>
           </div>
 
           {/* Right Image Content */}
-          <motion.div
-            initial={{ opacity: 0, scale: 0.8, rotate: 5 }}
-            animate={{ opacity: 1, scale: 1, rotate: 0 }}
-            transition={{ duration: 0.8, ease: "easeOut" }}
-            className="relative"
-          >
+          <div className="relative animate-fade-in-scale">
             <div className="relative z-10 rounded-[2.5rem] overflow-hidden shadow-2xl border-[12px] border-white transform rotate-3 hover:rotate-0 transition-transform duration-700">
               <OptimizedImage
                 src={content.imageUrl}
@@ -108,11 +93,9 @@ export default function HeroSection() {
               <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent" />
             </div>
 
-            {/* Floating Badges */}
-            <motion.div
-              animate={{ y: [0, -15, 0] }}
-              transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
-              className="absolute -top-6 -left-6 z-20 bg-white p-4 rounded-2xl shadow-xl border border-slate-50 flex items-center gap-3"
+            {/* Floating Badges - CSS only animations */}
+            <div
+              className="absolute -top-6 -left-6 z-20 bg-white p-4 rounded-2xl shadow-xl border border-slate-50 flex items-center gap-3 animate-float-slow"
             >
               <div className="w-10 h-10 bg-emerald-50 rounded-full flex items-center justify-center">
                 <ShieldCheck className="w-6 h-6 text-emerald-600" />
@@ -125,17 +108,10 @@ export default function HeroSection() {
                   Terjamin
                 </p>
               </div>
-            </motion.div>
+            </div>
 
-            <motion.div
-              animate={{ y: [0, 15, 0] }}
-              transition={{
-                duration: 5,
-                repeat: Infinity,
-                ease: "easeInOut",
-                delay: 0.5,
-              }}
-              className="absolute -bottom-10 -right-6 z-20 bg-white p-5 rounded-2xl shadow-xl border border-slate-50"
+            <div
+              className="absolute -bottom-10 -right-6 z-20 bg-white p-5 rounded-2xl shadow-xl border border-slate-50 animate-float-slow-reverse"
             >
               <p className="text-[10px] font-bold text-slate-400 uppercase mb-1">
                 Pengiriman
@@ -143,8 +119,8 @@ export default function HeroSection() {
               <p className="text-sm font-black text-slate-800">
                 Cepat Seluruh Indonesia
               </p>
-            </motion.div>
-          </motion.div>
+            </div>
+          </div>
         </div>
       </div>
     </section>

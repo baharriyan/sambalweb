@@ -18,6 +18,7 @@ import { trpc, RouterOutputs } from "@/lib/trpc";
 import { useCart } from "@/contexts/CartContextHook";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { Loader2 } from "lucide-react";
+import { loadMidtransSnap } from "@/lib/loadMidtrans";
 
 const COURIERS = [
   { id: "jne", name: "JNE (Reguler)" },
@@ -187,6 +188,9 @@ export default function Checkout() {
           }, 1500);
           return;
         }
+
+        // Load Midtrans Snap dynamically
+        await loadMidtransSnap();
 
         // @ts-expect-error - Midtrans type mismatch
         window.snap.pay(snapToken, {

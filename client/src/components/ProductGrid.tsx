@@ -14,7 +14,6 @@ import { toast } from "sonner";
 import { trpc, RouterOutputs } from "@/lib/trpc";
 import { useCart } from "@/contexts/CartContextHook";
 import { useAuth } from "@/_core/hooks/useAuth";
-import { motion } from "framer-motion";
 import OptimizedImage from "./OptimizedImage";
 
 type Product = RouterOutputs["products"]["list"][number];
@@ -111,12 +110,10 @@ export default function ProductGrid() {
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
           {products?.map((product, idx) => (
-            <motion.div
+            <div
               key={product.id}
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ delay: idx * 0.1 }}
+              className="animate-fade-in-up"
+              style={{ animationDelay: `${idx * 0.1}s` }}
             >
               <Card className="group border-none shadow-none bg-transparent overflow-hidden flex flex-col h-full">
                 <div className="relative aspect-[4/5] rounded-[2rem] overflow-hidden mb-6 bg-slate-100 transition-all duration-500 group-hover:shadow-2xl group-hover:shadow-red-100">
@@ -211,7 +208,7 @@ export default function ProductGrid() {
                   </div>
                 </CardContent>
               </Card>
-            </motion.div>
+            </div>
           ))}
         </div>
       </div>

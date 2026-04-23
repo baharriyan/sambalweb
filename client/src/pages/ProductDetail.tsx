@@ -7,6 +7,7 @@ import { trpc } from "@/lib/trpc";
 import { useCart } from "@/contexts/CartContextHook";
 import { toast } from "sonner";
 import { Minus, Plus, ShoppingCart, Loader2, ArrowLeft } from "lucide-react";
+import OptimizedImage from "@/components/OptimizedImage";
 
 export default function ProductDetail() {
   const [match, params] = useRoute("/product/:slug");
@@ -98,19 +99,14 @@ export default function ProductDetail() {
           )}
 
           {product && (
-            <div className="grid md:grid-cols-2 gap-12 bg-white p-6 md:p-12 rounded-2xl shadow-sm border border-gray-100">
+            <div className="grid md:grid-cols-2 gap-12 bg-white p-6 md:p-12 rounded-2xl shadow-sm border border-gray-100 animate-fade-in-up">
               {/* Product Image */}
-              <div className="bg-gradient-to-br from-red-50 to-orange-50 rounded-xl overflow-hidden aspect-square flex items-center justify-center text-9xl">
-                {product.imageUrl ? (
-                  <img
-                    src={product.imageUrl}
-                    alt={product.name}
-                    className="w-full h-full object-cover"
-                    loading="lazy"
-                  />
-                ) : (
-                  "🌶️"
-                )}
+               <div className="bg-slate-50 rounded-xl overflow-hidden aspect-square flex items-center justify-center text-9xl">
+                <OptimizedImage
+                  src={product.imageUrl || "/attached_assets/placeholder.png"}
+                  alt={product.name}
+                  className="w-full h-full object-cover"
+                />
               </div>
 
               {/* Product Info */}

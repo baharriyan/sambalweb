@@ -16,6 +16,7 @@ import { ShoppingCart, Plus, Minus, Search, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { trpc, RouterOutputs } from "@/lib/trpc";
 import { useCart } from "@/contexts/CartContextHook";
+import OptimizedImage from "@/components/OptimizedImage";
 
 type Product = RouterOutputs["products"]["list"][number];
 
@@ -178,20 +179,15 @@ export default function Catalog() {
               {filteredProducts.map(product => (
                 <Card
                   key={product.id}
-                  className="bg-white border border-gray-200 rounded-xl overflow-hidden hover:shadow-xl transition-all duration-300 hover:scale-105 flex flex-col"
+                  className="bg-white border border-gray-200 rounded-xl overflow-hidden hover:shadow-xl transition-all duration-300 hover:scale-105 flex flex-col animate-fade-in-up"
                 >
                   {/* Product Image */}
-                  <div className="h-48 bg-gradient-to-br from-red-100 to-orange-100 flex items-center justify-center text-6xl overflow-hidden">
-                    {product.imageUrl ? (
-                      <img
-                        src={product.imageUrl}
-                        alt={product.name}
-                        className="w-full h-full object-cover"
-                        loading="lazy"
-                      />
-                    ) : (
-                      "🌶️"
-                    )}
+                  <div className="h-48 bg-slate-100 flex items-center justify-center text-6xl overflow-hidden">
+                    <OptimizedImage
+                      src={product.imageUrl || "/attached_assets/placeholder.png"}
+                      alt={product.name}
+                      className="w-full h-full object-cover"
+                    />
                   </div>
 
                   {/* Product Info */}
