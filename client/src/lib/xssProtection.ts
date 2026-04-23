@@ -15,7 +15,7 @@ export function escapeHtml(text: string): string {
     '"': "&quot;",
     "'": "&#039;",
   };
-  return text.replace(/[&<>"']/g, (char) => map[char] || char);
+  return text.replace(/[&<>"']/g, char => map[char] || char);
 }
 
 /**
@@ -71,7 +71,7 @@ export function sanitizePhoneNumber(phone: string): string {
 /**
  * Sanitize numeric input
  */
-export function sanitizeNumber(value: any): number {
+export function sanitizeNumber(value: unknown): number {
   const num = Number(value);
   return isNaN(num) ? 0 : num;
 }
@@ -79,20 +79,20 @@ export function sanitizeNumber(value: any): number {
 /**
  * Deep sanitize object (recursively sanitize all string values)
  */
-export function sanitizeObject(obj: any): any {
+export function sanitizeObject<T>(obj: T): T {
   if (typeof obj !== "object" || obj === null) {
-    return typeof obj === "string" ? sanitizeInput(obj) : obj;
+    return (typeof obj === "string" ? sanitizeInput(obj) : obj) as T;
   }
 
   if (Array.isArray(obj)) {
-    return obj.map((item) => sanitizeObject(item));
+    return obj.map(item => sanitizeObject(item)) as unknown as T;
   }
 
-  const sanitized: any = {};
-  for (const [key, value] of Object.entries(obj)) {
+  const sanitized = {} as Record<string, unknown>;
+  for (const [key, value] of Object.entries(obj as Record<string, unknown>)) {
     sanitized[key] = sanitizeObject(value);
   }
-  return sanitized;
+  return sanitized as unknown as T;
 }
 
 /**
@@ -110,7 +110,7 @@ export function containsXssPayload(str: string): boolean {
     /expression\(/gi,
   ];
 
-  return xssPatterns.some((pattern) => pattern.test(str));
+  return xssPatterns.some(pattern => pattern.test(str));
 }
 
 /**

@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach, vi } from "vitest";
+import { describe, it, expect, vi } from "vitest";
 import * as db from "./db";
 
 // Mock database functions
@@ -76,7 +76,9 @@ describe("E-Commerce API Tests", () => {
         isActive: true,
       };
 
-      vi.mocked(db.getProductBySlug as any).mockResolvedValue(mockProduct as any);
+      vi.mocked(db.getProductBySlug as any).mockResolvedValue(
+        mockProduct as any
+      );
 
       const result = await db.getProductBySlug("sambal-bawang");
       expect(result).toEqual(mockProduct);
@@ -402,3 +404,4 @@ describe("E-Commerce API Tests", () => {
     });
   });
 });
+

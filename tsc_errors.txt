@@ -1,0 +1,27 @@
+﻿src/components/MiniCartDrawer.tsx(44,19): error TS18046: 'error' is of type 'unknown'.
+src/components/MiniCartDrawer.tsx(65,19): error TS18046: 'error' is of type 'unknown'.
+src/components/MiniCartDrawer.tsx(80,19): error TS18046: 'error' is of type 'unknown'.
+src/components/ui/sidebar.tsx(102,30): error TS2322: Type '{ state: string; open: boolean; setOpen: (value: boolean | ((value: boolean) => boolean)) => void; isMobile: boolean; openMobile: boolean; setOpenMobile: React.Dispatch<React.SetStateAction<boolean>>; toggleSidebar: () => void; }' is not assignable to type 'SidebarContextProps'.
+  Types of property 'state' are incompatible.
+    Type 'string' is not assignable to type '"expanded" | "collapsed"'.
+src/components/ui/sidebar.tsx(456,3): error TS2339: Property 'variant' does not exist on type 'ClassAttributes<HTMLButtonElement> & ButtonHTMLAttributes<HTMLButtonElement> & { asChild?: boolean | undefined; isActive?: boolean | undefined; tooltip?: string | ... 1 more ... | undefined; }'.
+src/components/ui/sidebar.tsx(457,3): error TS2339: Property 'size' does not exist on type 'ClassAttributes<HTMLButtonElement> & ButtonHTMLAttributes<HTMLButtonElement> & { asChild?: boolean | undefined; isActive?: boolean | undefined; tooltip?: string | ... 1 more ... | undefined; }'.
+src/hooks/useComposition.ts(36,43): error TS2345: Argument of type '(e: React.CompositionEvent<T>) => void' is not assignable to parameter of type 'noop'.
+  Types of parameters 'e' and 'args' are incompatible.
+    Type 'unknown' is not assignable to type 'CompositionEvent<T>'.
+src/hooks/useComposition.ts(49,41): error TS2345: Argument of type '(e: React.CompositionEvent<T>) => void' is not assignable to parameter of type 'noop'.
+  Types of parameters 'e' and 'args' are incompatible.
+    Type 'unknown' is not assignable to type 'CompositionEvent<T>'.
+src/hooks/useComposition.ts(59,34): error TS2345: Argument of type '(e: React.KeyboardEvent<T>) => void' is not assignable to parameter of type 'noop'.
+  Types of parameters 'e' and 'args' are incompatible.
+    Type 'unknown' is not assignable to type 'KeyboardEvent<T>'.
+src/pages/admin/Dashboard.tsx(162,16): error TS2322: Type '{ title: string; value: string; icon: ForwardRefExoticComponent<Omit<LucideProps, "ref"> & RefAttributes<SVGSVGElement>>; trend: string; trendValue: string; color: string; }' is not assignable to type '{ title: string; value: string; icon: ElementType<any, keyof IntrinsicElements>; trend?: "up" | "down" | undefined; trendValue?: string | undefined; color: string; }'.
+  Types of property 'trend' are incompatible.
+    Type 'string' is not assignable to type '"up" | "down" | undefined'.
+src/pages/Checkout.tsx(77,24): error TS2304: Cannot find name 'useMemo'.
+src/pages/Dashboard.tsx(685,32): error TS2304: Cannot find name 'Edit2'.
+src/pages/Register.tsx(58,16): error TS18046: 'err' is of type 'unknown'.
+../server/_core/imageApi.ts(69,54): error TS2304: Cannot find name 'imageSize'.
+../server/_core/rateLimiting.ts(99,21): error TS2339: Property 'socket' does not exist on type 'Socket'.
+../server/_core/sdk.ts(134,7): error TS2353: Object literal may only specify known properties, and 'expiresIn' does not exist in type '{ accessToken: string; }'.
+../server/db.ts(207,22): error TS2709: Cannot use namespace 'sql' as a type.

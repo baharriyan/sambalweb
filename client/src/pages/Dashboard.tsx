@@ -6,9 +6,20 @@ import Footer from "@/components/Footer";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Package, User, LogOut, Lock, MapPin, Trash2, Edit2, Plus } from "lucide-react";
-import { trpc } from "@/lib/trpc";
+import {
+  Package,
+  User,
+  LogOut,
+  Lock,
+  MapPin,
+  Trash2,
+  Edit2,
+} from "lucide-react";
+import { trpc, RouterOutputs } from "@/lib/trpc";
 import { toast } from "sonner";
+
+type Order = RouterOutputs["orders"]["getUserOrders"][number];
+type Address = RouterOutputs["addresses"]["list"][number];
 
 export default function Dashboard() {
   const [, navigate] = useLocation();
@@ -17,16 +28,29 @@ export default function Dashboard() {
   const { data: orders } = trpc.orders.getUserOrders.useQuery(undefined, {
     enabled: !!user,
   });
-  const { data: addresses, refetch: refetchAddresses } = trpc.addresses.list.useQuery(undefined, {
-    enabled: !!user,
+  const { data: addresses, refetch: refetchAddresses } =
+    trpc.addresses.list.useQuery(undefined, {
+      enabled: !!user,
+    });
+
+  const [passwordForm, setPasswordForm] = useState({
+    currentPassword: "",
+    newPassword: "",
+    confirmPassword: "",
   });
-  
-  const [passwordForm, setPasswordForm] = useState({ currentPassword: "", newPassword: "", confirmPassword: "" });
-  const [addressForm, setAddressForm] = useState({ label: "", fullName: "", phone: "", address: "", city: "", postalCode: "", isPrimary: false });
+  const [addressForm, setAddressForm] = useState({
+    label: "",
+    fullName: "",
+    phone: "",
+    address: "",
+    city: "",
+    postalCode: "",
+    isPrimary: false,
+  });
   const [isChangingPassword, setIsChangingPassword] = useState(false);
   const [isAddingAddress, setIsAddingAddress] = useState(false);
   const [editingAddressId, setEditingAddressId] = useState<number | null>(null);
-  
+
   const changePasswordMutation = trpc.auth.changePassword.useMutation();
   const createAddressMutation = trpc.addresses.create.useMutation();
   const updateAddressMutation = trpc.addresses.update.useMutation();
@@ -60,7 +84,7 @@ export default function Dashboard() {
 
   const handleChangePassword = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!passwordForm.currentPassword || !passwordForm.newPassword) {
       toast.error("Semua field harus diisi");
       return;
@@ -83,10 +107,14 @@ export default function Dashboard() {
         newPassword: passwordForm.newPassword,
       });
       toast.success("Password berhasil diubah");
-      setPasswordForm({ currentPassword: "", newPassword: "", confirmPassword: "" });
+      setPasswordForm({
+        currentPassword: "",
+        newPassword: "",
+        confirmPassword: "",
+      });
     } catch (error: unknown) {
-      const err = error as any;
-      toast.error(err?.message || "Gagal mengubah password");
+      const message = error instanceof Error ? error.message : "Gagal mengubah password";
+      toast.error(message);
     } finally {
       setIsChangingPassword(false);
     }
@@ -94,8 +122,13 @@ export default function Dashboard() {
 
   const handleAddAddress = async (e: React.FormEvent) => {
     e.preventDefault();
-    
-    if (!addressForm.fullName || !addressForm.phone || !addressForm.address || !addressForm.city) {
+
+    if (
+      !addressForm.fullName ||
+      !addressForm.phone ||
+      !addressForm.address ||
+      !addressForm.city
+    ) {
       toast.error("Semua field wajib diisi");
       return;
     }
@@ -113,9 +146,17 @@ export default function Dashboard() {
         await createAddressMutation.mutateAsync(addressForm);
         toast.success("Alamat berhasil ditambahkan");
       }
-      setAddressForm({ label: "", fullName: "", phone: "", address: "", city: "", postalCode: "", isPrimary: false });
+      setAddressForm({
+        label: "",
+        fullName: "",
+        phone: "",
+        address: "",
+        city: "",
+        postalCode: "",
+        isPrimary: false,
+      });
       refetchAddresses();
-    } catch (error: unknown) {
+    } catch {
       toast.error("Gagal menyimpan alamat");
     } finally {
       setIsAddingAddress(false);
@@ -128,13 +169,13 @@ export default function Dashboard() {
         await deleteAddressMutation.mutateAsync({ addressId });
         toast.success("Alamat berhasil dihapus");
         refetchAddresses();
-      } catch (error: unknown) {
+      } catch {
         toast.error("Gagal menghapus alamat");
       }
     }
   };
 
-  const handleEditAddress = (address: any) => {
+  const handleEditAddress = (address: Address) => {
     setAddressForm({
       label: address.label || "",
       fullName: address.fullName,
@@ -153,8 +194,8 @@ export default function Dashboard() {
       toast.success("Siap checkout dengan produk yang sama");
       navigate("/checkout", { state: result });
     } catch (error: unknown) {
-      const err = error as any;
-      toast.error(err?.message || "Gagal repeat order");
+      const message = error instanceof Error ? error.message : "Gagal repeat order";
+      toast.error(message);
     }
   };
 
@@ -165,8 +206,8 @@ export default function Dashboard() {
         toast.success("Pesanan berhasil dibatalkan");
         utils.orders.getUserOrders.invalidate();
       } catch (error: unknown) {
-        const err = error as any;
-        toast.error(err?.message || "Gagal membatalkan pesanan");
+        const message = error instanceof Error ? error.message : "Gagal membatalkan pesanan";
+        toast.error(message);
       }
     }
   };
@@ -178,8 +219,8 @@ export default function Dashboard() {
         toast.success("Riwayat pesanan berhasil dihapus");
         utils.orders.getUserOrders.invalidate();
       } catch (error: unknown) {
-        const err = error as any;
-        toast.error(err?.message || "Gagal menghapus riwayat pesanan");
+        const message = error instanceof Error ? error.message : "Gagal menghapus riwayat pesanan";
+        toast.error(message);
       }
     }
   };
@@ -216,7 +257,10 @@ export default function Dashboard() {
                 <User className="w-4 h-4" />
                 Profil
               </TabsTrigger>
-              <TabsTrigger value="addresses" className="flex items-center gap-2">
+              <TabsTrigger
+                value="addresses"
+                className="flex items-center gap-2"
+              >
                 <MapPin className="w-4 h-4" />
                 Alamat
               </TabsTrigger>
@@ -230,8 +274,11 @@ export default function Dashboard() {
             <TabsContent value="orders" className="space-y-4">
               {orders && orders.length > 0 ? (
                 <div className="grid gap-4">
-                  {orders.map((order: any) => (
-                    <Card key={order.id} className="hover:shadow-lg transition-shadow">
+                  {orders.map((order: Order) => (
+                    <Card
+                      key={order.id}
+                      className="hover:shadow-lg transition-shadow"
+                    >
                       <CardContent className="pt-6">
                         <div className="grid md:grid-cols-4 gap-4 mb-4">
                           <div>
@@ -243,7 +290,9 @@ export default function Dashboard() {
                           <div>
                             <p className="text-sm text-gray-600">Tanggal</p>
                             <p className="font-semibold text-gray-900">
-                              {new Date(order.createdAt).toLocaleDateString("id-ID")}
+                              {new Date(order.createdAt).toLocaleDateString(
+                                "id-ID"
+                              )}
                             </p>
                           </div>
                           <div>
@@ -260,35 +309,40 @@ export default function Dashboard() {
                                   order.status === "COMPLETED"
                                     ? "bg-green-100 text-green-800"
                                     : order.status === "PROCESSING"
-                                    ? "bg-blue-100 text-blue-800"
-                                    : order.status === "PENDING_PAYMENT"
-                                    ? "bg-yellow-100 text-yellow-800"
-                                    : "bg-gray-100 text-gray-800"
+                                      ? "bg-blue-100 text-blue-800"
+                                      : order.status === "PENDING_PAYMENT"
+                                        ? "bg-yellow-100 text-yellow-800"
+                                        : "bg-gray-100 text-gray-800"
                                 }`}
                               >
                                 {order.status === "COMPLETED"
                                   ? "Selesai"
                                   : order.status === "PROCESSING"
-                                  ? "Diproses"
-                                  : order.status === "SHIPPED"
-                                  ? "Dikirim"
-                                  : order.status === "PENDING_PAYMENT"
-                                  ? "Menunggu Pembayaran"
-                                  : "Dibatalkan"}
+                                    ? "Diproses"
+                                    : order.status === "SHIPPED"
+                                      ? "Dikirim"
+                                      : order.status === "PENDING_PAYMENT"
+                                        ? "Menunggu Pembayaran"
+                                        : "Dibatalkan"}
                               </span>
                             </div>
                           </div>
                         </div>
                         {order.status === "PENDING_PAYMENT" && (
                           <Button
-                            onClick={() => navigate(`/order-confirmation?orderId=${order.id}&orderNumber=${order.orderNumber}`)}
+                            onClick={() =>
+                              navigate(
+                                `/order-confirmation?orderId=${order.id}&orderNumber=${order.orderNumber}`
+                              )
+                            }
                             size="sm"
                             className="bg-red-600 hover:bg-red-700 mr-2"
                           >
                             Bayar Sekarang
                           </Button>
                         )}
-                        {(order.status === "PENDING_PAYMENT" || order.status === "PROCESSING") && (
+                        {(order.status === "PENDING_PAYMENT" ||
+                          order.status === "PROCESSING") && (
                           <Button
                             onClick={() => handleCancelOrder(order.id)}
                             size="sm"
@@ -325,7 +379,9 @@ export default function Dashboard() {
                 <Card>
                   <CardContent className="pt-12 text-center pb-12">
                     <Package className="w-12 h-12 text-gray-300 mx-auto mb-4" />
-                    <p className="text-gray-600 mb-4">Anda belum memiliki pesanan</p>
+                    <p className="text-gray-600 mb-4">
+                      Anda belum memiliki pesanan
+                    </p>
                     <a href="/catalog">
                       <Button className="bg-red-600 hover:bg-red-700">
                         Mulai Berbelanja
@@ -345,7 +401,9 @@ export default function Dashboard() {
                 <CardContent className="space-y-6">
                   <div className="grid md:grid-cols-2 gap-6">
                     <div>
-                      <label className="text-sm text-gray-600">Nama Lengkap</label>
+                      <label className="text-sm text-gray-600">
+                        Nama Lengkap
+                      </label>
                       <p className="text-lg font-semibold text-gray-900 mt-1">
                         {user.name}
                       </p>
@@ -362,7 +420,6 @@ export default function Dashboard() {
                         {user.role === "admin" ? "Administrator" : "Pelanggan"}
                       </p>
                     </div>
-
                   </div>
 
                   {user.role === "admin" && (
@@ -371,10 +428,14 @@ export default function Dashboard() {
                         👤 Admin Access
                       </p>
                       <p className="text-sm text-blue-800 mb-4">
-                        Anda memiliki akses ke panel admin untuk mengelola produk, pesanan, dan pengguna.
+                        Anda memiliki akses ke panel admin untuk mengelola
+                        produk, pesanan, dan pengguna.
                       </p>
                       <a href="/rahasia">
-                        <Button size="sm" className="bg-blue-600 hover:bg-blue-700">
+                        <Button
+                          size="sm"
+                          className="bg-blue-600 hover:bg-blue-700"
+                        >
                           Buka Panel Admin
                         </Button>
                       </a>
@@ -398,7 +459,9 @@ export default function Dashboard() {
               {/* Add/Edit Address Form */}
               <Card>
                 <CardHeader>
-                  <CardTitle>{editingAddressId ? "Edit Alamat" : "Tambah Alamat Baru"}</CardTitle>
+                  <CardTitle>
+                    {editingAddressId ? "Edit Alamat" : "Tambah Alamat Baru"}
+                  </CardTitle>
                 </CardHeader>
                 <CardContent>
                   <form onSubmit={handleAddAddress} className="space-y-4">
@@ -410,7 +473,12 @@ export default function Dashboard() {
                         <input
                           type="text"
                           value={addressForm.label}
-                          onChange={(e) => setAddressForm({ ...addressForm, label: e.target.value })}
+                          onChange={e =>
+                            setAddressForm({
+                              ...addressForm,
+                              label: e.target.value,
+                            })
+                          }
                           className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-600"
                           placeholder="Contoh: Rumah"
                         />
@@ -422,7 +490,12 @@ export default function Dashboard() {
                         <input
                           type="text"
                           value={addressForm.fullName}
-                          onChange={(e) => setAddressForm({ ...addressForm, fullName: e.target.value })}
+                          onChange={e =>
+                            setAddressForm({
+                              ...addressForm,
+                              fullName: e.target.value,
+                            })
+                          }
                           className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-600"
                           placeholder="Nama lengkap penerima"
                           required
@@ -435,7 +508,12 @@ export default function Dashboard() {
                         <input
                           type="tel"
                           value={addressForm.phone}
-                          onChange={(e) => setAddressForm({ ...addressForm, phone: e.target.value })}
+                          onChange={e =>
+                            setAddressForm({
+                              ...addressForm,
+                              phone: e.target.value,
+                            })
+                          }
                           className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-600"
                           placeholder="Nomor telepon"
                           required
@@ -448,7 +526,12 @@ export default function Dashboard() {
                         <input
                           type="text"
                           value={addressForm.city}
-                          onChange={(e) => setAddressForm({ ...addressForm, city: e.target.value })}
+                          onChange={e =>
+                            setAddressForm({
+                              ...addressForm,
+                              city: e.target.value,
+                            })
+                          }
                           className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-600"
                           placeholder="Kota"
                           required
@@ -460,7 +543,12 @@ export default function Dashboard() {
                         </label>
                         <textarea
                           value={addressForm.address}
-                          onChange={(e) => setAddressForm({ ...addressForm, address: e.target.value })}
+                          onChange={e =>
+                            setAddressForm({
+                              ...addressForm,
+                              address: e.target.value,
+                            })
+                          }
                           className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-600"
                           placeholder="Jalan, nomor rumah, kelurahan, dst"
                           rows={3}
@@ -474,7 +562,12 @@ export default function Dashboard() {
                         <input
                           type="text"
                           value={addressForm.postalCode}
-                          onChange={(e) => setAddressForm({ ...addressForm, postalCode: e.target.value })}
+                          onChange={e =>
+                            setAddressForm({
+                              ...addressForm,
+                              postalCode: e.target.value,
+                            })
+                          }
                           className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-600"
                           placeholder="Kode pos"
                         />
@@ -484,10 +577,18 @@ export default function Dashboard() {
                           type="checkbox"
                           id="isPrimary"
                           checked={addressForm.isPrimary}
-                          onChange={(e) => setAddressForm({ ...addressForm, isPrimary: e.target.checked })}
+                          onChange={e =>
+                            setAddressForm({
+                              ...addressForm,
+                              isPrimary: e.target.checked,
+                            })
+                          }
                           className="w-4 h-4 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-red-600"
                         />
-                        <label htmlFor="isPrimary" className="text-sm font-medium text-gray-700">
+                        <label
+                          htmlFor="isPrimary"
+                          className="text-sm font-medium text-gray-700"
+                        >
                           Jadikan alamat utama
                         </label>
                       </div>
@@ -498,7 +599,11 @@ export default function Dashboard() {
                         disabled={isAddingAddress}
                         className="flex-1 bg-red-600 hover:bg-red-700"
                       >
-                        {isAddingAddress ? "Menyimpan..." : editingAddressId ? "Perbarui Alamat" : "Tambah Alamat"}
+                        {isAddingAddress
+                          ? "Menyimpan..."
+                          : editingAddressId
+                            ? "Perbarui Alamat"
+                            : "Tambah Alamat"}
                       </Button>
                       {editingAddressId && (
                         <Button
@@ -506,7 +611,15 @@ export default function Dashboard() {
                           variant="outline"
                           onClick={() => {
                             setEditingAddressId(null);
-                            setAddressForm({ label: "", fullName: "", phone: "", address: "", city: "", postalCode: "", isPrimary: false });
+                            setAddressForm({
+                              label: "",
+                              fullName: "",
+                              phone: "",
+                              address: "",
+                              city: "",
+                              postalCode: "",
+                              isPrimary: false,
+                            });
                           }}
                         >
                           Batal
@@ -520,17 +633,24 @@ export default function Dashboard() {
               {/* Addresses List */}
               <Card>
                 <CardHeader>
-                  <CardTitle>Alamat Tersimpan ({addresses?.length || 0})</CardTitle>
+                  <CardTitle>
+                    Alamat Tersimpan ({addresses?.length || 0})
+                  </CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4">
                   {addresses && addresses.length > 0 ? (
                     <div className="space-y-4">
-                      {addresses.map((address: any) => (
-                        <div key={address.id} className="border rounded-lg p-4 hover:bg-gray-50">
+                      {addresses.map((address: Address) => (
+                        <div
+                          key={address.id}
+                          className="border rounded-lg p-4 hover:bg-gray-50"
+                        >
                           <div className="flex justify-between items-start mb-3">
                             <div className="flex-1">
                               <div className="flex items-center gap-2 mb-1">
-                                <p className="font-semibold text-gray-900">{address.fullName}</p>
+                                <p className="font-semibold text-gray-900">
+                                  {address.fullName}
+                                </p>
                                 {address.isPrimary && (
                                   <span className="text-xs bg-green-100 text-green-800 px-2 py-1 rounded-full">
                                     Utama
@@ -542,10 +662,17 @@ export default function Dashboard() {
                                   </span>
                                 )}
                               </div>
-                              <p className="text-sm text-gray-600 mb-2">{address.phone}</p>
-                              <p className="text-sm text-gray-900">{address.address}</p>
+                              <p className="text-sm text-gray-600 mb-2">
+                                {address.phone}
+                              </p>
+                              <p className="text-sm text-gray-900">
+                                {address.address}
+                              </p>
                               <p className="text-sm text-gray-600">
-                                {address.city} {address.postalCode ? `, ${address.postalCode}` : ""}
+                                {address.city}{" "}
+                                {address.postalCode
+                                  ? `, ${address.postalCode}`
+                                  : ""}
                               </p>
                             </div>
                           </div>
@@ -575,8 +702,12 @@ export default function Dashboard() {
                   ) : (
                     <div className="text-center py-8">
                       <MapPin className="w-12 h-12 text-gray-300 mx-auto mb-3" />
-                      <p className="text-gray-600">Tidak ada alamat tersimpan</p>
-                      <p className="text-sm text-gray-500 mt-1">Tambahkan alamat di atas untuk pengiriman</p>
+                      <p className="text-gray-600">
+                        Tidak ada alamat tersimpan
+                      </p>
+                      <p className="text-sm text-gray-500 mt-1">
+                        Tambahkan alamat di atas untuk pengiriman
+                      </p>
                     </div>
                   )}
                 </CardContent>
@@ -590,7 +721,10 @@ export default function Dashboard() {
                   <CardTitle>Keamanan</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <form onSubmit={handleChangePassword} className="space-y-4 max-w-md">
+                  <form
+                    onSubmit={handleChangePassword}
+                    className="space-y-4 max-w-md"
+                  >
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-2">
                         Password Saat Ini
@@ -598,7 +732,12 @@ export default function Dashboard() {
                       <input
                         type="password"
                         value={passwordForm.currentPassword}
-                        onChange={(e) => setPasswordForm({ ...passwordForm, currentPassword: e.target.value })}
+                        onChange={e =>
+                          setPasswordForm({
+                            ...passwordForm,
+                            currentPassword: e.target.value,
+                          })
+                        }
                         className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-600"
                         placeholder="Masukkan password saat ini"
                         disabled={isChangingPassword}
@@ -612,7 +751,12 @@ export default function Dashboard() {
                       <input
                         type="password"
                         value={passwordForm.newPassword}
-                        onChange={(e) => setPasswordForm({ ...passwordForm, newPassword: e.target.value })}
+                        onChange={e =>
+                          setPasswordForm({
+                            ...passwordForm,
+                            newPassword: e.target.value,
+                          })
+                        }
                         className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-600"
                         placeholder="Masukkan password baru (min 6 karakter)"
                         disabled={isChangingPassword}
@@ -626,7 +770,12 @@ export default function Dashboard() {
                       <input
                         type="password"
                         value={passwordForm.confirmPassword}
-                        onChange={(e) => setPasswordForm({ ...passwordForm, confirmPassword: e.target.value })}
+                        onChange={e =>
+                          setPasswordForm({
+                            ...passwordForm,
+                            confirmPassword: e.target.value,
+                          })
+                        }
                         className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-600"
                         placeholder="Konfirmasi password baru"
                         disabled={isChangingPassword}
@@ -651,3 +800,5 @@ export default function Dashboard() {
     </div>
   );
 }
+
+

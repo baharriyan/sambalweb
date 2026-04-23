@@ -2,9 +2,10 @@ import axios from "axios";
 
 // Catatan: Gunakan Sandbox Key untuk tahap pengembangan.
 // Ganti dengan Production Key saat aplikasi sudah siap meluncur.
-const MIDTRANS_SERVER_KEY = process.env.MIDTRANS_SERVER_KEY || "SB-Mid-server-YOUR_SANDBOX_KEY";
+const MIDTRANS_SERVER_KEY =
+  process.env.MIDTRANS_SERVER_KEY || "SB-Mid-server-YOUR_SANDBOX_KEY";
 const MIDTRANS_IS_PRODUCTION = process.env.MIDTRANS_IS_PRODUCTION === "true";
-const MIDTRANS_API_URL = MIDTRANS_IS_PRODUCTION 
+const MIDTRANS_API_URL = MIDTRANS_IS_PRODUCTION
   ? "https://app.midtrans.com/snap/v1/transactions"
   : "https://app.sandbox.midtrans.com/snap/v1/transactions";
 const MIDTRANS_CORE_API_URL = MIDTRANS_IS_PRODUCTION
@@ -18,18 +19,22 @@ export async function getTransactionStatus(orderNumber: string) {
   const authHeader = Buffer.from(`${MIDTRANS_SERVER_KEY}:`).toString("base64");
 
   try {
-    const response = await axios.get(`${MIDTRANS_CORE_API_URL}/${orderNumber}/status`, {
-      headers: {
-        Accept: "application/json",
-        "Content-Type": "application/json",
-        Authorization: `Basic ${authHeader}`,
-      },
-    });
+    const response = await axios.get(
+      `${MIDTRANS_CORE_API_URL}/${orderNumber}/status`,
+      {
+        headers: {
+          Accept: "application/json",
+          "Content-Type": "application/json",
+          Authorization: `Basic ${authHeader}`,
+        },
+      }
+    );
 
     return response.data;
-  } catch (error: any) {
-    console.error("[Midtrans Status Error]", error.response?.data || error.message);
-    throw new Error("Gagal mengambil status pembayaran dari Midtrans");
+  } catch (error: unknown) {
+    throw new Error("Gagal mengambil status pembayaran dari Midtrans", {
+      cause: error,
+    });
   }
 }
 
@@ -67,11 +72,16 @@ export async function createMidtransTransaction(orderData: {
   const isSimulationForced = systemSettings?.midtransSimulation ?? true;
 
   // Demo Mode: Jika Key masih placeholder atau dipaksa dari settings
-  if (isSimulationForced || MIDTRANS_SERVER_KEY.includes("YOUR_") || !MIDTRANS_SERVER_KEY || MIDTRANS_SERVER_KEY === "" || MIDTRANS_SERVER_KEY.includes("YOUR_SANDBOX_KEY")) {
-    console.warn("[Midtrans] Running in SIMULATION mode.");
+  if (
+    isSimulationForced ||
+    MIDTRANS_SERVER_KEY.includes("YOUR_") ||
+    !MIDTRANS_SERVER_KEY ||
+    MIDTRANS_SERVER_KEY === "" ||
+    MIDTRANS_SERVER_KEY.includes("YOUR_SANDBOX_KEY")
+  ) {
     return {
       token: "demo-snap-token-" + Math.random().toString(36).substring(2, 11),
-      redirect_url: "#"
+      redirect_url: "#",
     };
   }
 
@@ -85,17 +95,16 @@ export async function createMidtransTransaction(orderData: {
     });
 
     return response.data; // Berisi { token, redirect_url }
-  } catch (error: any) {
-    const errorData = error.response?.data;
-    console.error("[Midtrans API Error]", {
-      status: error.response?.status,
-      data: errorData,
-      message: error.message
-    });
-    
-    const errorMessage = errorData?.error_messages?.[0] || 
-                        errorData?.message || 
-                        "Gagal membuat transaksi ke Midtrans (Cek Server Key)";
-    throw new Error(errorMessage);
+  } catch (error: unknown) {
+    let errorMessage = "Gagal membuat transaksi ke Midtrans (Cek Server Key)";
+
+    if (axios.isAxiosError(error)) {
+      const errorData = error.response?.data;
+      errorMessage =
+        errorData?.error_messages?.[0] || errorData?.message || errorMessage;
+    }
+
+    throw new Error(errorMessage, { cause: error });
   }
 }
+

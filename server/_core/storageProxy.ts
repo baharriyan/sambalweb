@@ -17,7 +17,7 @@ export function registerStorageProxy(app: Express) {
     try {
       const forgeUrl = new URL(
         "v1/storage/presign/get",
-        ENV.forgeApiUrl.replace(/\/+$/, "") + "/",
+        ENV.forgeApiUrl.replace(/\/+$/, "") + "/"
       );
       forgeUrl.searchParams.set("path", key);
 
@@ -26,13 +26,11 @@ export function registerStorageProxy(app: Express) {
       });
 
       if (!forgeResp.ok) {
-        const body = await forgeResp.text().catch(() => "");
-        console.error(`[StorageProxy] forge error: ${forgeResp.status} ${body}`);
         res.status(502).send("Storage backend error");
         return;
       }
 
-      const data = await forgeResp.json() as { url?: string };
+      const data = (await forgeResp.json()) as { url?: string };
       const url = data.url;
       if (!url) {
         res.status(502).send("Empty signed URL from backend");
@@ -41,8 +39,7 @@ export function registerStorageProxy(app: Express) {
 
       res.set("Cache-Control", "no-store");
       res.redirect(307, url);
-    } catch (err) {
-      console.error("[StorageProxy] failed:", err);
+    } catch {
       res.status(502).send("Storage proxy error");
     }
   });

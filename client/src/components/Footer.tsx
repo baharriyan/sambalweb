@@ -14,10 +14,13 @@ export default function Footer() {
               <div className="w-10 h-10 bg-gradient-to-br from-red-600 to-orange-600 rounded-lg flex items-center justify-center">
                 <span className="text-white font-bold">S</span>
               </div>
-              <span className="font-bold text-white text-lg">Sambal Premium</span>
+              <span className="font-bold text-white text-lg">
+                Sambal Premium
+              </span>
             </div>
             <p className="text-sm text-gray-400 leading-relaxed">
-              Sambal berkualitas premium dibuat dengan bahan pilihan terbaik dan cinta untuk keluarga Indonesia.
+              Sambal berkualitas premium dibuat dengan bahan pilihan terbaik dan
+              cinta untuk keluarga Indonesia.
             </p>
           </div>
 
@@ -27,7 +30,9 @@ export default function Footer() {
             <ul className="space-y-2 text-sm">
               <li>
                 <Link href="/">
-                  <a className="hover:text-red-400 transition-colors">Beranda</a>
+                  <a className="hover:text-red-400 transition-colors">
+                    Beranda
+                  </a>
                 </Link>
               </li>
               <li>
@@ -36,7 +41,10 @@ export default function Footer() {
                 </Link>
               </li>
               <li>
-                <a href="#how-to-order" className="hover:text-red-400 transition-colors">
+                <a
+                  href="#how-to-order"
+                  className="hover:text-red-400 transition-colors"
+                >
                   Cara Pesan
                 </a>
               </li>
@@ -54,13 +62,21 @@ export default function Footer() {
             <ul className="space-y-3 text-sm">
               <li className="flex items-center gap-2">
                 <Mail className="w-4 h-4 text-red-400" />
-                <a href="mailto:info@sambalpremium.com" className="hover:text-red-400 transition-colors">
+                <a
+                  href="mailto:info@sambalpremium.com"
+                  className="hover:text-red-400 transition-colors"
+                >
                   info@sambalpremium.com
                 </a>
               </li>
               <li className="flex items-center gap-2">
                 <Phone className="w-4 h-4 text-red-400" />
-                <a href="https://wa.me/6281234567890" target="_blank" rel="noopener noreferrer" className="hover:text-red-400 transition-colors">
+                <a
+                  href="https://wa.me/6281234567890"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="hover:text-red-400 transition-colors"
+                >
                   +62 812-3456-7890
                 </a>
               </li>
@@ -104,21 +120,31 @@ export default function Footer() {
           <div className="grid md:grid-cols-2 gap-8 mb-8">
             {/* Payment Methods */}
             <div>
-              <h4 className="font-bold text-white mb-3 text-sm">Metode Pembayaran</h4>
+              <h4 className="font-bold text-white mb-3 text-sm">
+                Metode Pembayaran
+              </h4>
               <div className="flex gap-3 flex-wrap">
                 <div className="bg-gray-800 px-3 py-1 rounded text-xs">BCA</div>
-                <div className="bg-gray-800 px-3 py-1 rounded text-xs">Mandiri</div>
+                <div className="bg-gray-800 px-3 py-1 rounded text-xs">
+                  Mandiri
+                </div>
                 <div className="bg-gray-800 px-3 py-1 rounded text-xs">BNI</div>
-                <div className="bg-gray-800 px-3 py-1 rounded text-xs">QRIS</div>
+                <div className="bg-gray-800 px-3 py-1 rounded text-xs">
+                  QRIS
+                </div>
               </div>
             </div>
 
             {/* Shipping Partners */}
             <div>
-              <h4 className="font-bold text-white mb-3 text-sm">Mitra Pengiriman</h4>
+              <h4 className="font-bold text-white mb-3 text-sm">
+                Mitra Pengiriman
+              </h4>
               <div className="flex gap-3 flex-wrap">
                 <div className="bg-gray-800 px-3 py-1 rounded text-xs">JNE</div>
-                <div className="bg-gray-800 px-3 py-1 rounded text-xs">SiCepat</div>
+                <div className="bg-gray-800 px-3 py-1 rounded text-xs">
+                  SiCepat
+                </div>
                 <div className="bg-gray-800 px-3 py-1 rounded text-xs">J&T</div>
               </div>
             </div>
@@ -138,3 +164,5 @@ export default function Footer() {
     </footer>
   );
 }
+
+

@@ -7,6 +7,7 @@ Setup dan jalankan project dalam 5 menit!
 ## ⚡ Quick Setup
 
 ### 1. Install Dependencies
+
 ```bash
 pnpm install
 ```
@@ -14,6 +15,7 @@ pnpm install
 ### 2. Setup Database
 
 #### Option A: Menggunakan MySQL yang sudah exist
+
 ```bash
 # Edit .env file dan set DATABASE_URL
 # Contoh:
@@ -24,6 +26,7 @@ pnpm run db:push
 ```
 
 #### Option B: Buat database baru
+
 ```bash
 # Login ke MySQL
 mysql -u root -p
@@ -43,6 +46,7 @@ pnpm run db:push
 ```
 
 ### 3. Environment Setup
+
 ```bash
 # Create .env file di root project
 cat > .env << EOF
@@ -54,12 +58,14 @@ EOF
 ```
 
 ### 4. Seed Data (Optional)
+
 ```bash
 # Add sample products & data
 node seed.mjs
 ```
 
 ### 5. Start Development Server
+
 ```bash
 pnpm run dev
 ```
@@ -71,26 +77,31 @@ pnpm run dev
 ## 🧪 Test Features
 
 ### 1. Browse Products
+
 - Go to http://localhost:3000/catalog
 - Search & filter products
 
 ### 2. Add to Cart (Guest)
+
 - Click product → "Add to Cart"
 - Cart drawer opens → Review items
 - Items saved di localStorage
 
 ### 3. Checkout (Guest)
+
 - Click "Checkout" di cart drawer
 - Fill form → Submit
 - See order confirmation page
 
 ### 4. Try as User (Optional)
+
 - Login dengan OAuth
 - Add items to cart
 - Cart items akan save ke database
 - Checkout like normal
 
 ### 5. Admin Dashboard
+
 - Login dengan `OWNER_OPEN_ID` user
 - Go to http://localhost:3000/admin
 - View dashboard stats
@@ -190,6 +201,7 @@ pnpm run check
 ## 🔧 Troubleshooting
 
 ### Port 3000 sudah digunakan?
+
 ```bash
 # Kill process di port 3000
 # Windows:
@@ -202,6 +214,7 @@ kill -9 <PID>
 ```
 
 ### Database connection error?
+
 ```bash
 # Verify MySQL running
 mysql -u root -p -e "SELECT 1"
@@ -211,6 +224,7 @@ mysql -u root -p -e "SELECT 1"
 ```
 
 ### Cart tidak appear di mobile?
+
 ```bash
 # Clear localStorage
 localStorage.clear()
@@ -218,6 +232,7 @@ localStorage.clear()
 ```
 
 ### OAuth login tidak jalan?
+
 ```bash
 # Check OWNER_OPEN_ID di .env set dengan benar
 # Verify OAuth server accessible
@@ -228,6 +243,7 @@ localStorage.clear()
 ## 📊 Database
 
 ### Current Tables
+
 - `users` - User accounts
 - `products` - Sambal products
 - `cartItems` - Shopping cart
@@ -236,7 +252,9 @@ localStorage.clear()
 - `addresses` - Shipping addresses
 
 ### Sample Data (dari seed.mjs)
+
 Biasanya sudah ada 4 sambal products:
+
 1. Sambal Bawang - Rp25,000
 2. Sambal Teri Medan - Rp30,000
 3. Sambal Matah - Rp28,000
@@ -247,6 +265,7 @@ Biasanya sudah ada 4 sambal products:
 ## 🔐 Security Features
 
 ✅ Enabled:
+
 - Security headers (CSP, X-Frame-Options)
 - CSRF token validation
 - Rate limiting (login: 5/15min, API: 60/min)
@@ -276,12 +295,15 @@ Biasanya sudah ada 4 sambal products:
 ## 🎨 UI Customization
 
 ### Theme
+
 Edit di `client/src/contexts/ThemeContext.tsx`
 
 ### Colors
+
 Edit TailwindCSS classes (currently using red/orange gradient)
 
 ### Styling
+
 All components use TailwindCSS - edit classes directly in components
 
 ---

@@ -5,25 +5,31 @@ export default function HowToOrder() {
     {
       number: 1,
       title: "Pilih Varian & Jumlah",
-      description: "Pilih varian sambal favorit Anda dan tentukan jumlah yang diinginkan dari berbagai pilihan yang tersedia.",
+      description:
+        "Pilih varian sambal favorit Anda dan tentukan jumlah yang diinginkan dari berbagai pilihan yang tersedia.",
       icon: ShoppingCart,
     },
     {
       number: 2,
       title: "Checkout & Isi Data",
-      description: "Lanjutkan ke checkout, isi data diri lengkap, pilih kurir pengiriman, dan metode pembayaran yang Anda inginkan.",
+      description:
+        "Lanjutkan ke checkout, isi data diri lengkap, pilih kurir pengiriman, dan metode pembayaran yang Anda inginkan.",
       icon: CreditCard,
     },
     {
       number: 3,
       title: "Pembayaran & Pengiriman",
-      description: "Transfer pembayaran ke rekening toko atau scan QRIS. Pesanan Anda akan masuk ke WhatsApp kami untuk diproses.",
+      description:
+        "Transfer pembayaran ke rekening toko atau scan QRIS. Pesanan Anda akan masuk ke WhatsApp kami untuk diproses.",
       icon: Truck,
     },
   ];
 
   return (
-    <section id="how-to-order" className="py-20 px-4 bg-gradient-to-b from-gray-50 to-white">
+    <section
+      id="how-to-order"
+      className="py-20 px-4 bg-gradient-to-b from-gray-50 to-white"
+    >
       <div className="max-w-7xl mx-auto">
         <div className="text-center mb-16">
           <h2 className="text-4xl md:text-5xl font-bold text-gray-900 mb-4">
@@ -52,7 +58,9 @@ export default function HowToOrder() {
 
                   {/* Step Number Badge */}
                   <div className="absolute top-4 right-4 w-10 h-10 bg-red-100 rounded-full flex items-center justify-center">
-                    <span className="font-bold text-red-600 text-lg">{step.number}</span>
+                    <span className="font-bold text-red-600 text-lg">
+                      {step.number}
+                    </span>
                   </div>
 
                   {/* Content */}
@@ -89,3 +97,5 @@ export default function HowToOrder() {
     </section>
   );
 }
+
+

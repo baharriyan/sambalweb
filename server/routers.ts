@@ -3,7 +3,12 @@ import { eq, and } from "drizzle-orm";
 import { Buffer } from "node:buffer";
 import { getSessionCookieOptions } from "./_core/cookies";
 import { systemRouter } from "./_core/systemRouter";
-import { publicProcedure, router, protectedProcedure, adminProcedure } from "./_core/trpc";
+import {
+  publicProcedure,
+  router,
+  protectedProcedure,
+  adminProcedure,
+} from "./_core/trpc";
 import { z } from "zod";
 import * as db from "./db";
 import { TRPCError } from "@trpc/server";
@@ -12,7 +17,7 @@ import { notifyOwner } from "./_core/notification";
 import { createMidtransTransaction, getTransactionStatus } from "./midtrans";
 
 // Helper to exclude sensitive fields from user response
-function sanitizeUser(user: any) {
+function sanitizeUser(user: db.User) {
   if (!user) return null;
   return {
     id: user.id,
@@ -21,7 +26,7 @@ function sanitizeUser(user: any) {
     name: user.name || null,
     phone: user.phone || null,
     loginMethod: user.loginMethod || null,
-    role: user.role || 'user',
+    role: user.role || "user",
     isBlocked: user.isBlocked || false,
     createdAt: user.createdAt,
     updatedAt: user.updatedAt,
@@ -57,44 +62,57 @@ const checkoutSchema = z.object({
   shippingAddress: z.string().min(1),
   shippingCity: z.string().optional().default(""),
   shippingPostalCode: z.string().optional(),
-  shippingCourier: z.enum(["jne", "jnt", "sicepat", "pos", "tiki", "JNE", "J&T", "SiCepat"]),
+  shippingCourier: z.enum([
+    "jne",
+    "jnt",
+    "sicepat",
+    "pos",
+    "tiki",
+    "JNE",
+    "J&T",
+    "SiCepat",
+  ]),
   shippingCost: z.number().min(0),
   paymentMethod: z.enum(["TRANSFER_BANK", "QRIS", "MIDTRANS"]),
   paymentBank: z.enum(["BCA", "Mandiri", "BNI"]).optional(),
   notes: z.string().optional(),
   couponCode: z.string().optional(),
-  cartItems: z.array(z.object({
-    productId: z.number(),
-    quantity: z.number().min(1),
-  })),
+  cartItems: z.array(
+    z.object({
+      productId: z.number(),
+      quantity: z.number().min(1),
+    })
+  ),
 });
 
 // Analytics routes
-const analyticsSchema = z.object({
-  days: z.number().optional(),
-});
+// Remove unused analyticsSchema
 
 import * as shippingService from "./shipping";
 
 export const appRouter = router({
   system: systemRouter,
-  
+
   shipping: router({
     getProvinces: publicProcedure.query(async () => {
       return shippingService.getProvinces();
     }),
     getCost: publicProcedure
-      .input(z.object({ 
-        provinceId: z.string(),
-        courier: z.string() 
-      }))
+      .input(
+        z.object({
+          provinceId: z.string(),
+          courier: z.string(),
+        })
+      )
       .query(async ({ input }) => {
         return shippingService.getShippingCost(input.provinceId, input.courier);
       }),
   }),
-  
+
   auth: router({
-    me: publicProcedure.query(opts => opts.ctx.user ? sanitizeUser(opts.ctx.user) : null),
+    me: publicProcedure.query(opts =>
+      opts.ctx.user ? sanitizeUser(opts.ctx.user) : null
+    ),
     logout: publicProcedure.mutation(({ ctx }) => {
       const cookieOptions = getSessionCookieOptions(ctx.req);
       ctx.res.clearCookie(COOKIE_NAME, { ...cookieOptions, maxAge: -1 });
@@ -102,39 +120,55 @@ export const appRouter = router({
         success: true,
       } as const;
     }),
-    
-    // Database-based login
+
     login: publicProcedure
-      .input(z.object({
-        email: z.string().email(),
-        password: z.string().min(1),
-        isAdminLogin: z.boolean().optional(),
-      }))
+      .input(
+        z.object({
+          email: z.string().email(),
+          password: z.string().min(1),
+          isAdminLogin: z.boolean().optional(),
+        })
+      )
       .mutation(async ({ input, ctx }) => {
         try {
-          console.log(`[Login] Attempting login for: ${input.email}`);
-          
+          const dbInstance = await db.getDb();
+          if (!dbInstance) {
+            throw new TRPCError({
+              code: "INTERNAL_SERVER_ERROR",
+              message: "Koneksi database gagal. Silakan hubungi administrator.",
+            });
+          }
+
           const user = await db.verifyPassword(input.email, input.password);
-          console.log(`[Login] User found: ${user ? user.email : "NOT FOUND"}`);
-          
+
           if (!user) {
-            console.log(`[Login] Invalid credentials for: ${input.email}`);
-            throw new TRPCError({ code: "UNAUTHORIZED", message: "Email atau password salah" });
+            throw new TRPCError({
+              code: "UNAUTHORIZED",
+              message: "Email atau password salah. Silakan coba lagi.",
+            });
           }
 
-          // Role-based login restriction
-          if (input.isAdminLogin && user.role !== 'admin') {
-            throw new TRPCError({ code: "UNAUTHORIZED", message: "Email atau password salah" });
-          }
-          if (!input.isAdminLogin && user.role === 'admin') {
-            throw new TRPCError({ code: "UNAUTHORIZED", message: "Email atau password salah" });
+          if (user.isBlocked) {
+            throw new TRPCError({
+              code: "FORBIDDEN",
+              message:
+                "Akun Anda telah dinonaktifkan. Silakan hubungi dukungan.",
+            });
           }
 
-          console.log(`[Login] Creating session token for: ${user.openId}`);
-          
-          // Create session token
+          if (input.isAdminLogin && user.role !== "admin") {
+            throw new TRPCError({
+              code: "FORBIDDEN",
+              message:
+                "Akses ditolak. Anda tidak memiliki hak akses administrator.",
+            });
+          }
+
           if (!user.openId) {
-            throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "User account is missing openId" });
+            throw new TRPCError({
+              code: "INTERNAL_SERVER_ERROR",
+              message: "User account is missing openId identifier",
+            });
           }
 
           const sessionToken = await sdk.createSessionToken(user.openId, {
@@ -142,39 +176,58 @@ export const appRouter = router({
             expiresInMs: ONE_YEAR_MS,
           });
 
-          // Set cookie
           const cookieOptions = getSessionCookieOptions(ctx.req);
-          console.log(`[Login] Setting cookie with options:`, cookieOptions);
-          
-          ctx.res.cookie(COOKIE_NAME, sessionToken, { ...cookieOptions, maxAge: ONE_YEAR_MS });
+          ctx.res.cookie(COOKIE_NAME, sessionToken, {
+            ...cookieOptions,
+            maxAge: ONE_YEAR_MS,
+          });
 
-          console.log(`[Login] Login successful for: ${user.email}`);
-          
           return {
             success: true,
             user: sanitizeUser(user),
           };
         } catch (error) {
           if (error instanceof TRPCError) throw error;
-          console.error("[Auth] Login error:", error);
-          throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Login failed" });
+
+          // Check for ECONNREFUSED or other DB errors
+          const errorMsg = String(error);
+          if (
+            errorMsg.includes("ECONNREFUSED") ||
+            errorMsg.includes("connect")
+          ) {
+            throw new TRPCError({
+              code: "INTERNAL_SERVER_ERROR",
+              message:
+                "Gagal menghubungkan ke database. Pastikan layanan MySQL Anda aktif.",
+            });
+          }
+
+          throw new TRPCError({
+            code: "INTERNAL_SERVER_ERROR",
+            message: "Terjadi kesalahan internal saat proses login.",
+          });
         }
       }),
-    
+
     // Database-based register
     register: publicProcedure
-      .input(z.object({
-        email: z.string().email(),
-        password: z.string().min(6),
-        name: z.string().optional(),
-        phone: z.string().optional(),
-      }))
+      .input(
+        z.object({
+          email: z.string().email(),
+          password: z.string().min(6),
+          name: z.string().optional(),
+          phone: z.string().optional(),
+        })
+      )
       .mutation(async ({ input, ctx }) => {
         try {
           // Check if user already exists
           const existing = await db.getUserByEmail(input.email);
           if (existing) {
-            throw new TRPCError({ code: "BAD_REQUEST", message: "Email already registered" });
+            throw new TRPCError({
+              code: "BAD_REQUEST",
+              message: "Email already registered",
+            });
           }
 
           // Create new user
@@ -183,15 +236,21 @@ export const appRouter = router({
             password: input.password,
             name: input.name,
             phone: input.phone,
-            role: 'user',
+            role: "user",
           });
 
           if (!user) {
-            throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Failed to create user" });
+            throw new TRPCError({
+              code: "INTERNAL_SERVER_ERROR",
+              message: "Failed to create user",
+            });
           }
 
           if (!user.openId) {
-            throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Failed to generate openId for new user" });
+            throw new TRPCError({
+              code: "INTERNAL_SERVER_ERROR",
+              message: "Failed to generate openId for new user",
+            });
           }
 
           // Create session token
@@ -202,7 +261,10 @@ export const appRouter = router({
 
           // Set cookie
           const cookieOptions = getSessionCookieOptions(ctx.req);
-          ctx.res.cookie(COOKIE_NAME, sessionToken, { ...cookieOptions, maxAge: ONE_YEAR_MS });
+          ctx.res.cookie(COOKIE_NAME, sessionToken, {
+            ...cookieOptions,
+            maxAge: ONE_YEAR_MS,
+          });
 
           return {
             success: true,
@@ -210,17 +272,21 @@ export const appRouter = router({
           };
         } catch (error) {
           if (error instanceof TRPCError) throw error;
-          console.error("[Auth] Register error:", error);
-          throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Registration failed" });
+          throw new TRPCError({
+            code: "INTERNAL_SERVER_ERROR",
+            message: "Registration failed",
+          });
         }
       }),
 
     // Change password
     changePassword: protectedProcedure
-      .input(z.object({
-        currentPassword: z.string().min(1),
-        newPassword: z.string().min(6),
-      }))
+      .input(
+        z.object({
+          currentPassword: z.string().min(1),
+          newPassword: z.string().min(6),
+        })
+      )
       .mutation(async ({ input, ctx }) => {
         try {
           const user = await db.getUserById(ctx.user!.id);
@@ -229,9 +295,15 @@ export const appRouter = router({
           }
 
           // Verify current password
-          const isValid = await db.verifyPassword(user.email, input.currentPassword);
+          const isValid = await db.verifyPassword(
+            user.email,
+            input.currentPassword
+          );
           if (!isValid) {
-            throw new TRPCError({ code: "UNAUTHORIZED", message: "Current password is incorrect" });
+            throw new TRPCError({
+              code: "UNAUTHORIZED",
+              message: "Current password is incorrect",
+            });
           }
 
           // Update to new password
@@ -240,8 +312,10 @@ export const appRouter = router({
           return { success: true };
         } catch (error) {
           if (error instanceof TRPCError) throw error;
-          console.error("[Auth] Change password error:", error);
-          throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Failed to change password" });
+          throw new TRPCError({
+            code: "INTERNAL_SERVER_ERROR",
+            message: "Failed to change password",
+          });
         }
       }),
   }),
@@ -256,7 +330,7 @@ export const appRouter = router({
           search: input.search,
         });
       }),
-    
+
     getBySlug: publicProcedure
       .input(z.object({ slug: z.string() }))
       .query(async ({ input }) => {
@@ -266,7 +340,7 @@ export const appRouter = router({
         }
         return product;
       }),
-    
+
     getById: publicProcedure
       .input(z.object({ id: z.number() }))
       .query(async ({ input }) => {
@@ -276,24 +350,26 @@ export const appRouter = router({
         }
         return product;
       }),
-    
+
     create: adminProcedure
-      .input(z.object({
-        name: z.string().min(1),
-        slug: z.string().min(1),
-        description: z.string().optional(),
-        price: z.number().min(0),
-        stock: z.number().min(0),
-        spiceLevel: z.number().min(1).max(5),
-        imageUrl: z.string().optional(),
-      }))
+      .input(
+        z.object({
+          name: z.string().min(1),
+          slug: z.string().min(1),
+          description: z.string().optional(),
+          price: z.number().min(0),
+          stock: z.number().min(0),
+          spiceLevel: z.number().min(1).max(5),
+          imageUrl: z.string().optional(),
+        })
+      )
       .mutation(async ({ input }) => {
         // Check for duplicate slug
         const existing = await db.getProductBySlug(input.slug);
         if (existing) {
-          throw new TRPCError({ 
-            code: "BAD_REQUEST", 
-            message: `Product with slug '${input.slug}' already exists` 
+          throw new TRPCError({
+            code: "BAD_REQUEST",
+            message: `Product with slug '${input.slug}' already exists`,
           });
         }
 
@@ -308,75 +384,96 @@ export const appRouter = router({
           isActive: true,
         });
       }),
-    
+
     update: adminProcedure
-      .input(z.object({
-        id: z.number(),
-        name: z.string().optional(),
-        slug: z.string().optional(),
-        description: z.string().optional(),
-        price: z.number().optional(),
-        stock: z.number().optional(),
-        spiceLevel: z.number().optional(),
-        imageUrl: z.string().optional(),
-        isActive: z.boolean().optional(),
-      }))
+      .input(
+        z.object({
+          id: z.number(),
+          name: z.string().optional(),
+          slug: z.string().optional(),
+          description: z.string().optional(),
+          price: z.number().optional(),
+          stock: z.number().optional(),
+          spiceLevel: z.number().optional(),
+          imageUrl: z.string().optional(),
+          isActive: z.boolean().optional(),
+        })
+      )
       .mutation(async ({ input }) => {
         const { id, ...data } = input;
-        
+
         // 1. Check if product exists
         const existing = await db.getProductById(id);
         if (!existing) {
-          throw new TRPCError({ code: "NOT_FOUND", message: "Product not found" });
+          throw new TRPCError({
+            code: "NOT_FOUND",
+            message: "Product not found",
+          });
         }
 
         // 2. If slug is changing, check for uniqueness
         if (data.slug && data.slug !== existing.slug) {
           const duplicate = await db.getProductBySlug(data.slug);
           if (duplicate) {
-            throw new TRPCError({ 
-              code: "BAD_REQUEST", 
-              message: `Slug '${data.slug}' is already taken by another product` 
+            throw new TRPCError({
+              code: "BAD_REQUEST",
+              message: `Slug '${data.slug}' is already taken by another product`,
             });
           }
         }
 
         return db.updateProduct(id, data);
       }),
-    
+
     delete: adminProcedure
       .input(z.object({ id: z.number() }))
       .mutation(async ({ input }) => {
         const existing = await db.getProductById(input.id);
         if (!existing) {
-          throw new TRPCError({ code: "NOT_FOUND", message: "Product not found" });
+          throw new TRPCError({
+            code: "NOT_FOUND",
+            message: "Product not found",
+          });
         }
         return db.deleteProduct(input.id);
       }),
 
     generateImage: adminProcedure
-      .input(z.object({
-        productId: z.number(),
-        prompt: z.string().min(10, "Prompt minimal 10 karakter").max(500, "Prompt maksimal 500 karakter"),
-        numOutputs: z.number().min(1).max(4).default(1),
-        imageSize: z.enum(["256x256", "512x512", "768x768"]).default("512x512"),
-      }))
+      .input(
+        z.object({
+          productId: z.number(),
+          prompt: z
+            .string()
+            .min(10, "Prompt minimal 10 karakter")
+            .max(500, "Prompt maksimal 500 karakter"),
+          numOutputs: z.number().min(1).max(4).default(1),
+          imageSize: z
+            .enum(["256x256", "512x512", "768x768"])
+            .default("512x512"),
+        })
+      )
       .mutation(async ({ input }) => {
         try {
           // Validate product exists
           const product = await db.getProductById(input.productId);
           if (!product) {
-            throw new TRPCError({ code: "NOT_FOUND", message: "Product tidak ditemukan" });
+            throw new TRPCError({
+              code: "NOT_FOUND",
+              message: "Product tidak ditemukan",
+            });
           }
 
           // Import image generation service
-          const { generateProductImage, validatePrompt } = await import("./_core/imageApi.js");
-          
+          const { generateProductImage, validatePrompt } = await import(
+            "./_core/imageApi.js"
+          );
+
           // Validate prompt
           if (!validatePrompt(input.prompt)) {
-            throw new TRPCError({ 
-              code: "BAD_REQUEST", 
-              message: "Prompt tidak valid atau mengandung konten yang tidak diijinkan" 
+            throw new TRPCError({
+              code: "BAD_REQUEST",
+              message:
+                "Prompt tidak valid atau mengandung konten yang tidak diijinkan",
             });
           }
 
@@ -390,13 +487,11 @@ export const appRouter = router({
           // Use first generated image
           if (generatedImages.length > 0) {
             const imageUrl = generatedImages[0].url;
-            
+
             // Update product with generated image
             await db.updateProduct(input.productId, {
               imageUrl,
             });
-
-            console.log(`[Product Image] Generated and updated for product ${input.productId}`);
           }
 
           return {
@@ -406,11 +501,10 @@ export const appRouter = router({
             message: `${generatedImages.length} gambar berhasil di-generate`,
           };
         } catch (error) {
-          console.error("[Image Generation Error]", error);
           if (error instanceof TRPCError) throw error;
-          throw new TRPCError({ 
-            code: "INTERNAL_SERVER_ERROR", 
-            message: "Gagal generate gambar: " + String(error) 
+          throw new TRPCError({
+            code: "INTERNAL_SERVER_ERROR",
+            message: "Gagal generate gambar: " + String(error),
           });
         }
       }),
@@ -418,24 +512,29 @@ export const appRouter = router({
 
   // Cart routes
   cart: router({
-    getItems: protectedProcedure
-      .query(async ({ ctx }) => {
-        return db.getCartItems(ctx.user!.id);
-      }),
-    
+    getItems: protectedProcedure.query(async ({ ctx }) => {
+      return db.getCartItems(ctx.user!.id);
+    }),
+
     addItem: protectedProcedure
       .input(cartItemSchema)
       .mutation(async ({ ctx, input }) => {
         const product = await db.getProductById(input.productId);
         if (!product) {
-          throw new TRPCError({ code: "NOT_FOUND", message: "Product not found" });
+          throw new TRPCError({
+            code: "NOT_FOUND",
+            message: "Product not found",
+          });
         }
         if (product.stock < input.quantity) {
-          throw new TRPCError({ code: "BAD_REQUEST", message: "Insufficient stock" });
+          throw new TRPCError({
+            code: "BAD_REQUEST",
+            message: "Insufficient stock",
+          });
         }
         return db.addToCart(ctx.user!.id, input.productId, input.quantity);
       }),
-    
+
     updateItem: protectedProcedure
       .input(z.object({ cartItemId: z.number(), quantity: z.number().min(0) }))
       .mutation(async ({ ctx, input }) => {
@@ -443,17 +542,27 @@ export const appRouter = router({
         if (!drizzle) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
 
         // Ownership check
-        const item = await drizzle.select().from(db.cartItems)
-          .where(and(eq(db.cartItems.id, input.cartItemId), eq(db.cartItems.userId, ctx.user.id)))
+        const item = await drizzle
+          .select()
+          .from(db.cartItems)
+          .where(
+            and(
+              eq(db.cartItems.id, input.cartItemId),
+              eq(db.cartItems.userId, ctx.user.id)
+            )
+          )
           .limit(1);
-        
+
         if (item.length === 0) {
-          throw new TRPCError({ code: "NOT_FOUND", message: "Cart item not found" });
+          throw new TRPCError({
+            code: "NOT_FOUND",
+            message: "Cart item not found",
+          });
         }
 
         return db.updateCartItem(input.cartItemId, input.quantity);
       }),
-    
+
     removeItem: protectedProcedure
       .input(z.object({ cartItemId: z.number() }))
       .mutation(async ({ ctx, input }) => {
@@ -461,21 +570,30 @@ export const appRouter = router({
         if (!drizzle) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
 
         // Ownership check
-        const item = await drizzle.select().from(db.cartItems)
-          .where(and(eq(db.cartItems.id, input.cartItemId), eq(db.cartItems.userId, ctx.user.id)))
+        const item = await drizzle
+          .select()
+          .from(db.cartItems)
+          .where(
+            and(
+              eq(db.cartItems.id, input.cartItemId),
+              eq(db.cartItems.userId, ctx.user.id)
+            )
+          )
           .limit(1);
-        
+
         if (item.length === 0) {
-          throw new TRPCError({ code: "NOT_FOUND", message: "Cart item not found" });
+          throw new TRPCError({
+            code: "NOT_FOUND",
+            message: "Cart item not found",
+          });
         }
 
         return db.removeCartItem(input.cartItemId);
       }),
-    
-    clear: protectedProcedure
-      .mutation(async ({ ctx }) => {
-        return db.clearCart(ctx.user!.id);
-      }),
+
+    clear: protectedProcedure.mutation(async ({ ctx }) => {
+      return db.clearCart(ctx.user!.id);
+    }),
   }),
 
   // Order routes
@@ -484,19 +602,33 @@ export const appRouter = router({
       .input(checkoutSchema)
       .mutation(async ({ ctx, input }) => {
         const drizzle = await db.getDb();
-        if (!drizzle) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database not available" });
+        if (!drizzle)
+          throw new TRPCError({
+            code: "INTERNAL_SERVER_ERROR",
+            message: "Database not available",
+          });
 
-        return await drizzle.transaction(async (tx) => {
+        return await drizzle.transaction(async tx => {
           // 1. Calculate totals and check stock
           let subtotal = 0;
           const itemsToProcess = [];
 
           for (const item of input.cartItems) {
-            const [product] = await tx.select().from(db.products)
+            const [product] = await tx
+              .select()
+              .from(db.products)
               .where(eq(db.products.id, item.productId));
 
-            if (!product) throw new TRPCError({ code: "NOT_FOUND", message: `Produk ${item.productId} tidak ditemukan` });
-            if (product.stock < item.quantity) throw new TRPCError({ code: "BAD_REQUEST", message: `Stok ${product.name} tidak mencukupi` });
+            if (!product)
+              throw new TRPCError({
+                code: "NOT_FOUND",
+                message: `Produk ${item.productId} tidak ditemukan`,
+              });
+            if (product.stock < item.quantity)
+              throw new TRPCError({
+                code: "BAD_REQUEST",
+                message: `Stok ${product.name} tidak mencukupi`,
+              });
 
             subtotal += product.price * item.quantity;
             itemsToProcess.push({ product, quantity: item.quantity });
@@ -506,24 +638,52 @@ export const appRouter = router({
           let discountAmount = 0;
           let couponId = null;
           if (input.couponCode) {
-            const [coupon] = await tx.select().from(db.coupons)
-              .where(and(eq(db.coupons.code, input.couponCode), eq(db.coupons.isActive, true)))
+            const [coupon] = await tx
+              .select()
+              .from(db.coupons)
+              .where(
+                and(
+                  eq(db.coupons.code, input.couponCode),
+                  eq(db.coupons.isActive, true)
+                )
+              )
               .limit(1);
 
-            if (!coupon) throw new TRPCError({ code: "BAD_REQUEST", message: "Kupon tidak valid" });
-            if (coupon.usageLimit && coupon.usageCount >= coupon.usageLimit) throw new TRPCError({ code: "BAD_REQUEST", message: "Kuota kupon sudah habis" });
-            if (subtotal < coupon.minOrderAmount) throw new TRPCError({ code: "BAD_REQUEST", message: `Minimal belanja untuk kupon ini adalah Rp${coupon.minOrderAmount.toLocaleString('id-ID')}` });
+            if (!coupon)
+              throw new TRPCError({
+                code: "BAD_REQUEST",
+                message: "Kupon tidak valid",
+              });
+            if (coupon.usageLimit && coupon.usageCount >= coupon.usageLimit)
+              throw new TRPCError({
+                code: "BAD_REQUEST",
+                message: "Kuota kupon sudah habis",
+              });
+            if (subtotal < coupon.minOrderAmount)
+              throw new TRPCError({
+                code: "BAD_REQUEST",
+                message: `Minimal belanja untuk kupon ini adalah Rp${coupon.minOrderAmount.toLocaleString("id-ID")}`,
+              });
 
             if (coupon.discountType === "FIXED") {
               discountAmount = coupon.discountValue;
             } else {
-              discountAmount = Math.floor((subtotal * coupon.discountValue) / 100);
-              if (coupon.maxDiscountAmount) discountAmount = Math.min(discountAmount, coupon.maxDiscountAmount);
+              discountAmount = Math.floor(
+                (subtotal * coupon.discountValue) / 100
+              );
+              if (coupon.maxDiscountAmount)
+                discountAmount = Math.min(
+                  discountAmount,
+                  coupon.maxDiscountAmount
+                );
             }
             couponId = coupon.id;
           }
 
-          const total = Math.max(0, subtotal + input.shippingCost - discountAmount);
+          const total = Math.max(
+            0,
+            subtotal + input.shippingCost - discountAmount
+          );
           const orderNumber = `ORD-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
 
           // 3. Create Order
@@ -546,11 +706,14 @@ export const appRouter = router({
             total,
             status: "PENDING_PAYMENT",
             notes: input.notes || null,
-          } as any);
+          });
 
-          const orderIdResult = (orderResult as any).insertId || (orderResult as any)[0]?.insertId;
+          const orderIdResult =
+            (orderResult as unknown as { insertId: number }).insertId ||
+            (orderResult as unknown as [{ insertId: number }])[0]?.insertId;
           const orderId = Number(orderIdResult);
-          if (!orderId) throw new Error("Gagal mendapatkan ID pesanan dari database");
+          if (!orderId)
+            throw new Error("Gagal mendapatkan ID pesanan dari database");
 
           // 4. Create Order Items and Update Stock
           for (const item of itemsToProcess) {
@@ -564,31 +727,35 @@ export const appRouter = router({
             });
 
             // Atomic decrement within transaction
-            await tx.update(db.products)
+            await tx
+              .update(db.products)
               .set({ stock: db.sql`${db.products.stock} - ${item.quantity}` })
               .where(eq(db.products.id, item.product.id));
           }
 
           // 5. Update Coupon Usage
           if (couponId) {
-            await tx.update(db.coupons)
+            await tx
+              .update(db.coupons)
               .set({ usageCount: db.sql`${db.coupons.usageCount} + 1` })
               .where(db.eq(db.coupons.id, couponId));
           }
 
           // 6. Clear Cart
           if (ctx.user?.id) {
-            await tx.delete(db.cartItems).where(db.eq(db.cartItems.userId, ctx.user.id));
+            await tx
+              .delete(db.cartItems)
+              .where(db.eq(db.cartItems.userId, ctx.user.id));
           }
 
           // 7. Notify Owner
           try {
             await notifyOwner({
               title: "💰 Pesanan Baru Diterima!",
-              content: `Pesanan #${orderNumber} telah dibuat oleh ${input.customerName}.\nTotal: Rp${total.toLocaleString('id-ID')}\nMetode: ${input.paymentMethod}`
+              content: `Pesanan #${orderNumber} telah dibuat oleh ${input.customerName}.\nTotal: Rp${total.toLocaleString("id-ID")}\nMetode: ${input.paymentMethod}`,
             });
-          } catch (e) {
-            console.warn("[Notification] Failed to notify owner:", e);
+          } catch {
+            // Silently fail notification
           }
 
           return { orderId, orderNumber, total };
@@ -600,35 +767,53 @@ export const appRouter = router({
       .mutation(async ({ ctx, input }) => {
         const order = await db.getOrderById(input.orderId);
         if (!order) {
-          throw new TRPCError({ code: "NOT_FOUND", message: "Pesanan tidak ditemukan" });
+          throw new TRPCError({
+            code: "NOT_FOUND",
+            message: "Pesanan tidak ditemukan",
+          });
         }
 
         // Authorization: If order has userId, check it matches. If guest (userId null), allow anyone with the orderId.
-        if (order.userId && ctx.user?.id !== order.userId && ctx.user?.role !== "admin") {
-          throw new TRPCError({ code: "FORBIDDEN", message: "Bukan pemilik pesanan" });
+        if (
+          order.userId &&
+          ctx.user?.id !== order.userId &&
+          ctx.user?.role !== "admin"
+        ) {
+          throw new TRPCError({
+            code: "FORBIDDEN",
+            message: "Bukan pemilik pesanan",
+          });
         }
         if (order.status !== "PENDING_PAYMENT") {
-          throw new TRPCError({ code: "BAD_REQUEST", message: "Pesanan tidak dalam status menunggu pembayaran" });
+          throw new TRPCError({
+            code: "BAD_REQUEST",
+            message: "Pesanan tidak dalam status menunggu pembayaran",
+          });
         }
 
         await db.updateOrderPaymentProof(order.id, input.imageUrl);
-        
+
         try {
           await notifyOwner({
             title: "📸 Bukti Bayar Baru!",
-            content: `Pelanggan ${order.customerName} telah mengunggah bukti pembayaran untuk #${order.orderNumber}.`
+            content: `Pelanggan ${order.customerName} telah mengunggah bukti pembayaran untuk #${order.orderNumber}.`,
           });
-        } catch (e) {}
+          } catch {
+            // Silently fail notification
+          }
 
         return { success: true };
       }),
-    
+
     createPaymentToken: publicProcedure
       .input(z.object({ orderId: z.number() }))
       .mutation(async ({ input }) => {
         const order = await db.getOrderById(input.orderId);
         if (!order) {
-          throw new TRPCError({ code: "NOT_FOUND", message: "Pesanan tidak ditemukan" });
+          throw new TRPCError({
+            code: "NOT_FOUND",
+            message: "Pesanan tidak ditemukan",
+          });
         }
 
         try {
@@ -644,41 +829,49 @@ export const appRouter = router({
             snapToken: midtransResponse.token,
             redirectUrl: midtransResponse.redirect_url,
           };
-        } catch (error: any) {
-          console.error("[TRPC createPaymentToken Error]", error);
-          throw new TRPCError({ 
-            code: "INTERNAL_SERVER_ERROR", 
-            message: error.message || "Gagal mendapatkan token pembayaran" 
+        } catch (error) {
+          throw new TRPCError({
+            code: "INTERNAL_SERVER_ERROR",
+            message:
+              error instanceof Error
+                ? error.message
+                : "Gagal mendapatkan token pembayaran",
           });
         }
       }),
-    
+
     checkPaymentStatus: publicProcedure
       .input(z.object({ orderId: z.number() }))
       .mutation(async ({ input }) => {
         const order = await db.getOrderById(input.orderId);
         if (!order) {
-          throw new TRPCError({ code: "NOT_FOUND", message: "Pesanan tidak ditemukan" });
+          throw new TRPCError({
+            code: "NOT_FOUND",
+            message: "Pesanan tidak ditemukan",
+          });
         }
 
         try {
           const status = await getTransactionStatus(order.orderNumber);
-          
+
           // Midtrans success statuses: 'settlement' or 'capture' (for CC)
-          if (status.transaction_status === 'settlement' || status.transaction_status === 'capture') {
+          if (
+            status.transaction_status === "settlement" ||
+            status.transaction_status === "capture"
+          ) {
             await db.updateOrderStatus(order.id, "PROCESSING");
             return { paid: true, status: status.transaction_status };
           }
-          
+
           return { paid: false, status: status.transaction_status };
-        } catch (error: any) {
-          throw new TRPCError({ 
-            code: "INTERNAL_SERVER_ERROR", 
-            message: "Gagal memverifikasi pembayaran ke Midtrans" 
+        } catch {
+          throw new TRPCError({
+            code: "INTERNAL_SERVER_ERROR",
+            message: "Gagal memverifikasi pembayaran ke Midtrans",
           });
         }
       }),
-    
+
     getById: publicProcedure
       .input(z.object({ orderId: z.number() }))
       .query(async ({ input }) => {
@@ -689,30 +882,55 @@ export const appRouter = router({
         const items = await db.getOrderItems(input.orderId);
         return { ...order, items };
       }),
-    
-    getUserOrders: protectedProcedure
-      .query(async ({ ctx }) => {
-        return db.getUserOrders(ctx.user!.id);
-      }),
-    
+
+    getUserOrders: protectedProcedure.query(async ({ ctx }) => {
+      return db.getUserOrders(ctx.user!.id);
+    }),
+
     getAllOrders: adminProcedure
-      .input(z.object({ limit: z.number().optional(), offset: z.number().optional() }))
+      .input(
+        z.object({
+          limit: z.number().optional(),
+          offset: z.number().optional(),
+        })
+      )
       .query(async ({ input }) => {
         return db.getAllOrders(input.limit, input.offset);
       }),
-    
+
     getByStatus: adminProcedure
-      .input(z.object({ status: z.enum(["PENDING_PAYMENT", "PROCESSING", "SHIPPED", "COMPLETED", "CANCELLED"]) }))
+      .input(
+        z.object({
+          status: z.enum([
+            "PENDING_PAYMENT",
+            "PROCESSING",
+            "SHIPPED",
+            "COMPLETED",
+            "CANCELLED",
+          ]),
+        })
+      )
       .query(async ({ input }) => {
         return db.getOrdersByStatus(input.status);
       }),
-    
+
     updateStatus: adminProcedure
-      .input(z.object({ orderId: z.number(), status: z.enum(["PENDING_PAYMENT", "PROCESSING", "SHIPPED", "COMPLETED", "CANCELLED"]) }))
+      .input(
+        z.object({
+          orderId: z.number(),
+          status: z.enum([
+            "PENDING_PAYMENT",
+            "PROCESSING",
+            "SHIPPED",
+            "COMPLETED",
+            "CANCELLED",
+          ]),
+        })
+      )
       .mutation(async ({ input }) => {
         return db.updateOrderStatus(input.orderId, input.status);
       }),
-    
+
     orderAgain: protectedProcedure
       .input(z.object({ orderId: z.number() }))
       .mutation(async ({ ctx, input }) => {
@@ -723,19 +941,17 @@ export const appRouter = router({
           }
 
           const orderItems = await db.getOrderItems(input.orderId);
-          
-          // Create new order with same items
-          const newOrderNumber = `ORD-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
-          let subtotal = 0;
-          
+
           for (const item of orderItems) {
             const product = await db.getProductById(item.productId);
             if (!product || product.stock < item.quantity) {
-              throw new TRPCError({ code: "BAD_REQUEST", message: `${item.productName} is out of stock` });
+              throw new TRPCError({
+                code: "BAD_REQUEST",
+                message: `${item.productName} is out of stock`,
+              });
             }
-            subtotal += item.subtotal;
           }
-          
+
           // For now, return the items so user can checkout with the same products
           return {
             items: orderItems.map(item => ({
@@ -749,27 +965,41 @@ export const appRouter = router({
           };
         } catch (error) {
           if (error instanceof TRPCError) throw error;
-          console.error("[Orders] Order again error:", error);
-          throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Failed to repeat order" });
+          throw new TRPCError({
+            code: "INTERNAL_SERVER_ERROR",
+            message: "Failed to repeat order",
+          });
         }
       }),
-      
+
     cancelOrder: protectedProcedure
       .input(z.object({ orderId: z.number(), reason: z.string().optional() }))
       .mutation(async ({ ctx, input }) => {
         const order = await db.getOrderById(input.orderId);
         if (!order) {
-          throw new TRPCError({ code: "NOT_FOUND", message: "Pesanan tidak ditemukan" });
+          throw new TRPCError({
+            code: "NOT_FOUND",
+            message: "Pesanan tidak ditemukan",
+          });
         }
 
         // Authorization: Owner or Admin
         if (order.userId !== ctx.user.id && ctx.user.role !== "admin") {
-          throw new TRPCError({ code: "FORBIDDEN", message: "Bukan pemilik pesanan" });
+          throw new TRPCError({
+            code: "FORBIDDEN",
+            message: "Bukan pemilik pesanan",
+          });
         }
-        if (order.status !== "PENDING_PAYMENT" && order.status !== "PROCESSING") {
-          throw new TRPCError({ code: "BAD_REQUEST", message: "Pesanan tidak dapat dibatalkan" });
+        if (
+          order.status !== "PENDING_PAYMENT" &&
+          order.status !== "PROCESSING"
+        ) {
+          throw new TRPCError({
+            code: "BAD_REQUEST",
+            message: "Pesanan tidak dapat dibatalkan",
+          });
         }
-        
+
         await db.updateOrderStatus(order.id, "CANCELLED");
         return { success: true };
       }),
@@ -779,19 +1009,29 @@ export const appRouter = router({
       .mutation(async ({ ctx, input }) => {
         const order = await db.getOrderById(input.orderId);
         if (!order) {
-          throw new TRPCError({ code: "NOT_FOUND", message: "Pesanan tidak ditemukan" });
+          throw new TRPCError({
+            code: "NOT_FOUND",
+            message: "Pesanan tidak ditemukan",
+          });
         }
 
         // Authorization: Only owner can delete their own history
         if (order.userId !== ctx.user.id) {
-          throw new TRPCError({ code: "FORBIDDEN", message: "Bukan pemilik pesanan" });
+          throw new TRPCError({
+            code: "FORBIDDEN",
+            message: "Bukan pemilik pesanan",
+          });
         }
 
         // Only cancelled orders can be deleted
         if (order.status !== "CANCELLED") {
-          throw new TRPCError({ code: "BAD_REQUEST", message: "Hanya pesanan yang dibatalkan yang dapat dihapus dari riwayat" });
+          throw new TRPCError({
+            code: "BAD_REQUEST",
+            message:
+              "Hanya pesanan yang dibatalkan yang dapat dihapus dari riwayat",
+          });
         }
-        
+
         await db.deleteOrder(order.id);
         return { success: true };
       }),
@@ -799,11 +1039,10 @@ export const appRouter = router({
 
   // Address routes
   addresses: router({
-    list: protectedProcedure
-      .query(async ({ ctx }) => {
-        return db.getUserAddresses(ctx.user!.id);
-      }),
-    
+    list: protectedProcedure.query(async ({ ctx }) => {
+      return db.getUserAddresses(ctx.user!.id);
+    }),
+
     create: protectedProcedure
       .input(addressSchema)
       .mutation(async ({ ctx, input }) => {
@@ -812,27 +1051,37 @@ export const appRouter = router({
           ...input,
         });
       }),
-    
+
     update: protectedProcedure
       .input(z.object({ addressId: z.number(), ...addressSchema.shape }))
       .mutation(async ({ ctx, input }) => {
         const { addressId, ...data } = input;
-        
+
         const drizzle = await db.getDb();
         if (!drizzle) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
 
         // Ownership check
-        const addr = await drizzle.select().from(db.addresses)
-          .where(and(eq(db.addresses.id, addressId), eq(db.addresses.userId, ctx.user.id)))
+        const addr = await drizzle
+          .select()
+          .from(db.addresses)
+          .where(
+            and(
+              eq(db.addresses.id, addressId),
+              eq(db.addresses.userId, ctx.user.id)
+            )
+          )
           .limit(1);
-        
+
         if (addr.length === 0) {
-          throw new TRPCError({ code: "NOT_FOUND", message: "Address not found" });
+          throw new TRPCError({
+            code: "NOT_FOUND",
+            message: "Address not found",
+          });
         }
 
         return db.updateAddress(addressId, data);
       }),
-    
+
     delete: protectedProcedure
       .input(z.object({ addressId: z.number() }))
       .mutation(async ({ ctx, input }) => {
@@ -840,12 +1089,22 @@ export const appRouter = router({
         if (!drizzle) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
 
         // Ownership check
-        const addr = await drizzle.select().from(db.addresses)
-          .where(and(eq(db.addresses.id, input.addressId), eq(db.addresses.userId, ctx.user.id)))
+        const addr = await drizzle
+          .select()
+          .from(db.addresses)
+          .where(
+            and(
+              eq(db.addresses.id, input.addressId),
+              eq(db.addresses.userId, ctx.user.id)
+            )
+          )
           .limit(1);
-        
+
         if (addr.length === 0) {
-          throw new TRPCError({ code: "NOT_FOUND", message: "Address not found" });
+          throw new TRPCError({
+            code: "NOT_FOUND",
+            message: "Address not found",
+          });
         }
 
         return db.deleteAddress(input.addressId);
@@ -854,44 +1113,59 @@ export const appRouter = router({
 
   // User routes
   users: router({
-    getProfile: protectedProcedure
-      .query(async ({ ctx }) => {
-        return db.getUserById(ctx.user!.id);
-      }),
-    
+    getProfile: protectedProcedure.query(async ({ ctx }) => {
+      return db.getUserById(ctx.user!.id);
+    }),
+
     updateProfile: protectedProcedure
-      .input(z.object({ name: z.string().optional(), phone: z.string().optional() }))
+      .input(
+        z.object({ name: z.string().optional(), phone: z.string().optional() })
+      )
       .mutation(async ({ ctx, input }) => {
         return db.updateUser(ctx.user!.id, input);
       }),
-    
+
     getAllUsers: adminProcedure
-      .input(z.object({ limit: z.number().optional(), offset: z.number().optional() }))
+      .input(
+        z.object({
+          limit: z.number().optional(),
+          offset: z.number().optional(),
+        })
+      )
       .query(async ({ input }) => {
         return db.getAllUsers(input.limit, input.offset);
       }),
-    
+
     blockUser: adminProcedure
       .input(z.object({ userId: z.number() }))
       .mutation(async ({ ctx, input }) => {
         // Prevent blocking self
         if (input.userId === ctx.user.id) {
-          throw new TRPCError({ code: "BAD_REQUEST", message: "Anda tidak dapat memblokir akun Anda sendiri" });
+          throw new TRPCError({
+            code: "BAD_REQUEST",
+            message: "Anda tidak dapat memblokir akun Anda sendiri",
+          });
         }
 
         const targetUser = await db.getUserById(input.userId);
         if (!targetUser) {
-          throw new TRPCError({ code: "NOT_FOUND", message: "User tidak ditemukan" });
+          throw new TRPCError({
+            code: "NOT_FOUND",
+            message: "User tidak ditemukan",
+          });
         }
 
         // Prevent blocking other admins
         if (targetUser.role === "admin") {
-          throw new TRPCError({ code: "BAD_REQUEST", message: "Anda tidak dapat memblokir akun admin lain" });
+          throw new TRPCError({
+            code: "BAD_REQUEST",
+            message: "Anda tidak dapat memblokir akun admin lain",
+          });
         }
 
         return db.blockUser(input.userId);
       }),
-    
+
     unblockUser: adminProcedure
       .input(z.object({ userId: z.number() }))
       .mutation(async ({ input }) => {
@@ -901,39 +1175,44 @@ export const appRouter = router({
 
   // Analytics routes
   analytics: router({
-    getDashboardStats: adminProcedure
-      .query(async () => {
-        const [todayOrders, todayRevenue, monthRevenue, activeProducts, totalUsers, lowStockProducts] = await Promise.all([
-          db.getTodayOrdersCount(),
-          db.getTodayRevenue(),
-          db.getMonthRevenue(),
-          db.getActiveProductsCount(),
-          db.getTotalUsersCount(),
-          db.getLowStockProducts(10),
-        ]);
-        
-        return {
-          todayOrders,
-          todayRevenue,
-          monthRevenue,
-          activeProducts,
-          totalUsers,
-          lowStockProducts,
-        };
-      }),
-    
-    getRevenueTrend: adminProcedure
-      .query(async () => {
-        return db.getRevenueTrend();
-      }),
-    
+    getDashboardStats: adminProcedure.query(async () => {
+      const [
+        todayOrders,
+        todayRevenue,
+        monthRevenue,
+        activeProducts,
+        totalUsers,
+        lowStockProducts,
+      ] = await Promise.all([
+        db.getTodayOrdersCount(),
+        db.getTodayRevenue(),
+        db.getMonthRevenue(),
+        db.getActiveProductsCount(),
+        db.getTotalUsersCount(),
+        db.getLowStockProducts(10),
+      ]);
+
+      return {
+        todayOrders,
+        todayRevenue,
+        monthRevenue,
+        activeProducts,
+        totalUsers,
+        lowStockProducts,
+      };
+    }),
+
+    getRevenueTrend: adminProcedure.query(async () => {
+      return db.getRevenueTrend();
+    }),
+
     getRecentOrders: adminProcedure
       .input(z.object({ days: z.number().optional() }))
       .query(async ({ input }) => {
         return db.getRecentOrders(input.days);
       }),
   }),
-  
+
   wishlist: router({
     list: protectedProcedure.query(async ({ ctx }) => {
       return await db.getWishlistItems(ctx.user.id);
@@ -956,109 +1235,141 @@ export const appRouter = router({
     list: adminProcedure.query(async () => {
       const drizzle = await db.getDb();
       if (!drizzle) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
-      return await drizzle.select().from(db.coupons).orderBy(db.desc(db.coupons.createdAt));
+      return await drizzle
+        .select()
+        .from(db.coupons)
+        .orderBy(db.desc(db.coupons.createdAt));
     }),
 
     create: adminProcedure
-      .input(z.object({
-        code: z.string().min(3),
-        description: z.string().optional(),
-        discountType: z.enum(["FIXED", "PERCENTAGE"]),
-        discountValue: z.number().min(1),
-        minOrderAmount: z.number().default(0),
-        maxDiscountAmount: z.number().optional(),
-        startDate: z.string().optional().nullable(),
-        endDate: z.string().optional().nullable(),
-        usageLimit: z.number().optional().nullable(),
-        isActive: z.boolean().default(true),
-      }))
+      .input(
+        z.object({
+          code: z.string().min(3),
+          description: z.string().optional(),
+          discountType: z.enum(["FIXED", "PERCENTAGE"]),
+          discountValue: z.number().min(1),
+          minOrderAmount: z.number().default(0),
+          maxDiscountAmount: z.number().optional(),
+          startDate: z.string().optional().nullable(),
+          endDate: z.string().optional().nullable(),
+          usageLimit: z.number().optional().nullable(),
+          isActive: z.boolean().default(true),
+        })
+      )
       .mutation(async ({ input }) => {
         const drizzle = await db.getDb();
         if (!drizzle) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
-        
+
         // Uniqueness check
         const existing = await db.getCouponByCode(input.code);
         if (existing) {
-          throw new TRPCError({ code: "BAD_REQUEST", message: `Coupon with code '${input.code}' already exists` });
+          throw new TRPCError({
+            code: "BAD_REQUEST",
+            message: `Coupon with code '${input.code}' already exists`,
+          });
         }
 
         return await drizzle.insert(db.coupons).values({
           ...input,
           startDate: input.startDate ? new Date(input.startDate) : null,
           endDate: input.endDate ? new Date(input.endDate) : null,
-        } as any);
+        });
       }),
 
     validate: publicProcedure
       .input(z.object({ code: z.string(), subtotal: z.number() }))
       .query(async ({ input }) => {
         const coupon = await db.getCouponByCode(input.code);
-        if (!coupon || !coupon.isActive) throw new TRPCError({ code: "NOT_FOUND", message: "Kupon tidak ditemukan atau sudah tidak aktif" });
-        if (coupon.usageLimit && coupon.usageCount >= coupon.usageLimit) throw new TRPCError({ code: "BAD_REQUEST", message: "Kuota kupon sudah habis" });
-        if (input.subtotal < coupon.minOrderAmount) throw new TRPCError({ code: "BAD_REQUEST", message: `Minimal belanja untuk kupon ini adalah Rp${coupon.minOrderAmount.toLocaleString('id-ID')}` });
-        
+        if (!coupon || !coupon.isActive)
+          throw new TRPCError({
+            code: "NOT_FOUND",
+            message: "Kupon tidak ditemukan atau sudah tidak aktif",
+          });
+        if (coupon.usageLimit && coupon.usageCount >= coupon.usageLimit)
+          throw new TRPCError({
+            code: "BAD_REQUEST",
+            message: "Kuota kupon sudah habis",
+          });
+        if (input.subtotal < coupon.minOrderAmount)
+          throw new TRPCError({
+            code: "BAD_REQUEST",
+            message: `Minimal belanja untuk kupon ini adalah Rp${coupon.minOrderAmount.toLocaleString("id-ID")}`,
+          });
+
         return coupon;
       }),
-    
+
     delete: adminProcedure
       .input(z.object({ id: z.number() }))
       .mutation(async ({ input }) => {
         const drizzle = await db.getDb();
         if (!drizzle) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
-        return await drizzle.delete(db.coupons).where(db.eq(db.coupons.id, input.id));
+        return await drizzle
+          .delete(db.coupons)
+          .where(db.eq(db.coupons.id, input.id));
       }),
   }),
   media: router({
     upload: adminProcedure
-      .input(z.object({
-        filename: z.string(),
-        contentType: z.string().optional(),
-        base64Data: z.string(), // Base64 encoded file data
-      }))
+      .input(
+        z.object({
+          filename: z.string(),
+          contentType: z.string().optional(),
+          base64Data: z.string(), // Base64 encoded file data
+        })
+      )
       .mutation(async ({ input }) => {
         const { storagePut } = await import("./storage");
-        
+
         try {
           // Remove base64 prefix if exists
-          const base64Content = input.base64Data.includes(",") 
-            ? input.base64Data.split(",")[1] 
+          const base64Content = input.base64Data.includes(",")
+            ? input.base64Data.split(",")[1]
             : input.base64Data;
-            
+
           const buffer = Buffer.from(base64Content, "base64");
-          const result = await storagePut(input.filename, buffer, input.contentType);
-          
+          const result = await storagePut(
+            input.filename,
+            buffer,
+            input.contentType
+          );
+
           return {
             success: true,
             url: result.url,
             key: result.key,
           };
         } catch (error) {
-          console.error("[Media Upload Error]", error);
-          throw new TRPCError({ 
-            code: "INTERNAL_SERVER_ERROR", 
-            message: "Gagal mengunggah media: " + String(error) 
+          throw new TRPCError({
+            code: "INTERNAL_SERVER_ERROR",
+            message: "Gagal mengunggah media: " + String(error),
           });
         }
       }),
     uploadPublic: publicProcedure
-      .input(z.object({
-        filename: z.string(),
-        contentType: z.string().optional(),
-        base64Data: z.string(),
-      }))
+      .input(
+        z.object({
+          filename: z.string(),
+          contentType: z.string().optional(),
+          base64Data: z.string(),
+        })
+      )
       .mutation(async ({ input }) => {
         const { storagePut } = await import("./storage");
         try {
-          const base64Content = input.base64Data.includes(",") 
-            ? input.base64Data.split(",")[1] 
+          const base64Content = input.base64Data.includes(",")
+            ? input.base64Data.split(",")[1]
             : input.base64Data;
           const buffer = Buffer.from(base64Content, "base64");
           // Prefix filename to identify it as payment proof
           const filename = `proof_${Date.now()}_${input.filename}`;
           const result = await storagePut(filename, buffer, input.contentType);
           return { success: true, url: result.url };
-        } catch (error) {
-          throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Gagal mengunggah bukti bayar" });
+        } catch {
+          throw new TRPCError({
+            code: "INTERNAL_SERVER_ERROR",
+            message: "Gagal mengunggah bukti bayar",
+          });
         }
       }),
   }),
@@ -1069,10 +1380,12 @@ export const appRouter = router({
         return db.getSetting(input.key);
       }),
     update: adminProcedure
-      .input(z.object({
-        key: z.string(),
-        value: z.any(),
-      }))
+      .input(
+        z.object({
+          key: z.string(),
+          value: z.unknown(),
+        })
+      )
       .mutation(async ({ input }) => {
         return db.updateSetting(input.key, input.value);
       }),
@@ -1080,3 +1393,4 @@ export const appRouter = router({
 });
 
 export type AppRouter = typeof appRouter;
+

@@ -1,6 +1,7 @@
 import "dotenv/config";
 import express from "express";
 import cookieParser from "cookie-parser";
+import compression from "compression";
 import { createServer } from "http";
 import net from "net";
 import { createExpressMiddleware } from "@trpc/server/adapters/express";
@@ -12,8 +13,6 @@ import {
   securityHeaders,
   csrfTokenMiddleware,
   validateCSRFToken,
-  loginRateLimiter,
-  apiRateLimiter,
   requestLogger,
   sanitizeInput,
   trustProxyMiddleware,
@@ -42,8 +41,11 @@ async function startServer() {
   const app = express();
   const server = createServer(app);
 
+  // Compression middleware
+  app.use(compression());
+
   // Trust proxy middleware (untuk production dengan reverse proxy)
-  trustProxyMiddleware(app as any, {} as any, () => {});
+  app.use(trustProxyMiddleware);
 
   // Security headers middleware
   app.use(securityHeaders);
@@ -89,13 +91,12 @@ async function startServer() {
   const preferredPort = parseInt(process.env.PORT || "3000");
   const port = await findAvailablePort(preferredPort);
 
-  if (port !== preferredPort) {
-    console.log(`Port ${preferredPort} is busy, using port ${port} instead`);
-  }
-
   server.listen(port, () => {
-    console.log(`Server running on http://localhost:${port}/`);
+    // Server started
   });
 }
 
-startServer().catch(console.error);
+startServer().catch(() => {
+  process.exit(1);
+});
+

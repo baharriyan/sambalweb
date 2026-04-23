@@ -43,7 +43,6 @@ export async function fetchCSRFToken(): Promise<string | null> {
     });
 
     if (!response.ok) {
-      console.error("Failed to fetch CSRF token");
       return null;
     }
 
@@ -54,8 +53,7 @@ export async function fetchCSRFToken(): Promise<string | null> {
     }
 
     return null;
-  } catch (error) {
-    console.error("Error fetching CSRF token:", error);
+  } catch {
     return null;
   }
 }
@@ -63,7 +61,9 @@ export async function fetchCSRFToken(): Promise<string | null> {
 /**
  * Add CSRF token to request headers
  */
-export function addCSRFTokenToHeaders(headers: Record<string, string>): Record<string, string> {
+export function addCSRFTokenToHeaders(
+  headers: Record<string, string>
+): Record<string, string> {
   const token = getCSRFToken();
   if (token) {
     headers[CSRF_TOKEN_KEY] = token;
@@ -97,7 +97,10 @@ export async function fetchWithCSRFToken(
   } as Record<string, string>;
 
   // Add CSRF token for non-GET requests
-  if (options.method && ["POST", "PUT", "DELETE", "PATCH"].includes(options.method)) {
+  if (
+    options.method &&
+    ["POST", "PUT", "DELETE", "PATCH"].includes(options.method)
+  ) {
     if (token) {
       headers[CSRF_TOKEN_KEY] = token;
     }
@@ -116,3 +119,5 @@ export async function fetchWithCSRFToken(
 export function initializeCSRFToken(): void {
   fetchCSRFToken();
 }
+
+

@@ -1,4 +1,4 @@
-import { AXIOS_TIMEOUT_MS, COOKIE_NAME, ONE_YEAR_MS } from "@shared/const";
+import { COOKIE_NAME, ONE_YEAR_MS } from "@shared/const";
 import { ForbiddenError } from "@shared/_core/errors";
 import { parse as parseCookieHeader } from "cookie";
 import type { Request } from "express";
@@ -17,7 +17,6 @@ export type SessionPayload = {
 };
 
 class SDKServer {
-
   private parseCookies(cookieHeader: string | undefined) {
     if (!cookieHeader) {
       return new Map<string, string>();
@@ -74,7 +73,6 @@ class SDKServer {
     cookieValue: string | undefined | null
   ): Promise<{ openId: string; appId: string; name: string } | null> {
     if (!cookieValue) {
-      console.warn("[Auth] Missing session cookie");
       return null;
     }
 
@@ -90,7 +88,6 @@ class SDKServer {
         !isNonEmptyString(appId) ||
         !isNonEmptyString(name)
       ) {
-        console.warn("[Auth] Session payload missing required fields");
         return null;
       }
 
@@ -99,8 +96,7 @@ class SDKServer {
         appId,
         name,
       };
-    } catch (error) {
-      console.warn("[Auth] Session verification failed", String(error));
+    } catch {
       return null;
     }
   }
@@ -117,7 +113,7 @@ class SDKServer {
 
     const sessionUserId = session.openId;
     const signedInAt = new Date();
-    let user = await db.getUserByOpenId(sessionUserId);
+    const user = await db.getUserByOpenId(sessionUserId);
 
     if (!user) {
       throw ForbiddenError("User not found");
@@ -130,7 +126,7 @@ class SDKServer {
 
     return user;
   }
-  async exchangeCodeForToken(code: string, state: string) {
+  async exchangeCodeForToken(_code: string, _state: string): Promise<{ accessToken: string; expiresIn: number }> {
     // This is a stub for the actual OAuth exchange
     // Production: Implement real token exchange with your OAuth provider
     return {
@@ -139,7 +135,7 @@ class SDKServer {
     };
   }
 
-  async getUserInfo(accessToken: string) {
+  async getUserInfo(_accessToken: string): Promise<Record<string, any>> {
     // This is a stub for fetching user info from an OAuth provider
     return {
       openId: `oauth_${Date.now()}`,
@@ -152,3 +148,4 @@ class SDKServer {
 }
 
 export const sdk = new SDKServer();
+

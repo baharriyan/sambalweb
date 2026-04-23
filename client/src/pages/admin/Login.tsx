@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useLocation } from "wouter";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { Button } from "@/components/ui/button";
@@ -11,7 +11,7 @@ import { trpc } from "@/lib/trpc";
 
 export default function AdminLogin() {
   const [, navigate] = useLocation();
-  const { user, loading, refresh } = useAuth();
+  const { loading, refresh } = useAuth();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -33,16 +33,22 @@ export default function AdminLogin() {
         password,
         isAdminLogin: true,
       });
-      
+
       await refresh();
-      
+
       if (response.user?.role === "admin") {
         navigate("/rahasia/dashboard");
       } else {
-        setError("Akses ditolak. Hanya akun dengan role 'admin' yang dapat masuk di sini.");
+        setError(
+          "Akses ditolak. Hanya akun dengan role 'admin' yang dapat masuk di sini."
+        );
       }
-    } catch (err: any) {
-      setError(err.message || "Login gagal. Silakan periksa kredensial Anda.");
+    } catch (err: unknown) {
+      const errorMessage =
+        err instanceof Error
+          ? err.message
+          : "Login gagal. Silakan periksa kredensial Anda.";
+      setError(errorMessage);
     } finally {
       setIsSubmitting(false);
     }
@@ -63,20 +69,29 @@ export default function AdminLogin() {
           <div className="inline-flex items-center justify-center w-20 h-20 bg-red-600 rounded-2xl mb-4 shadow-2xl">
             <Lock className="w-10 h-10 text-white" />
           </div>
-          <h1 className="text-3xl font-bold text-white tracking-tight">Admin Portal</h1>
+          <h1 className="text-3xl font-bold text-white tracking-tight">
+            Admin Portal
+          </h1>
           <p className="text-gray-400 mt-2">Masuk ke area manajemen rahasia</p>
         </div>
 
         <Card className="border-0 bg-white shadow-2xl">
           <CardHeader className="border-b border-gray-100 pb-4">
-            <CardTitle className="text-center text-gray-800">Admin Login</CardTitle>
+            <CardTitle className="text-center text-gray-800">
+              Admin Login
+            </CardTitle>
           </CardHeader>
           <CardContent className="pt-8 space-y-6">
             <form onSubmit={handleAdminLogin} className="space-y-4">
               {error && (
-                <Alert variant="destructive" className="bg-red-50 border-red-200">
+                <Alert
+                  variant="destructive"
+                  className="bg-red-50 border-red-200"
+                >
                   <AlertCircle className="h-4 w-4 text-red-600" />
-                  <AlertDescription className="text-red-800">{error}</AlertDescription>
+                  <AlertDescription className="text-red-800">
+                    {error}
+                  </AlertDescription>
                 </Alert>
               )}
 
@@ -87,7 +102,7 @@ export default function AdminLogin() {
                   type="email"
                   placeholder="admin@example.com"
                   value={email}
-                  onChange={(e) => setEmail(e.target.value)}
+                  onChange={e => setEmail(e.target.value)}
                   required
                   className="h-12 border-gray-200 focus:ring-red-600"
                   disabled={isSubmitting}
@@ -101,7 +116,7 @@ export default function AdminLogin() {
                   type="password"
                   placeholder="••••••••"
                   value={password}
-                  onChange={(e) => setPassword(e.target.value)}
+                  onChange={e => setPassword(e.target.value)}
                   required
                   className="h-12 border-gray-200 focus:ring-red-600"
                   disabled={isSubmitting}
@@ -123,13 +138,16 @@ export default function AdminLogin() {
             </form>
 
             <div className="pt-4 text-center">
-              <a href="/" className="text-sm text-gray-500 hover:text-red-600 transition-colors">
+              <a
+                href="/"
+                className="text-sm text-gray-500 hover:text-red-600 transition-colors"
+              >
                 &larr; Kembali ke Situs Utama
               </a>
             </div>
           </CardContent>
         </Card>
-        
+
         <p className="mt-8 text-center text-gray-500 text-xs uppercase tracking-widest">
           Secure Access Only • Sambal Premium &copy; 2026
         </p>
@@ -137,3 +155,5 @@ export default function AdminLogin() {
     </div>
   );
 }
+
+

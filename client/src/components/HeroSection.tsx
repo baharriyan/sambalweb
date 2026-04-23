@@ -1,17 +1,25 @@
 import { Link } from "wouter";
 import { Button } from "@/components/ui/button";
 import { motion } from "framer-motion";
-import { ChevronRight, Star, ShieldCheck, Flame, Loader2 } from "lucide-react";
+import { ChevronRight, ShieldCheck, Flame, Loader2 } from "lucide-react";
 import { trpc } from "@/lib/trpc";
 
+import OptimizedImage from "./OptimizedImage";
+
 export default function HeroSection() {
-  const { data: heroContent, isLoading } = trpc.settings.get.useQuery({ key: "hero_content" });
+  const { data: heroContent, isLoading } = trpc.settings.get.useQuery({
+    key: "hero_content",
+  });
 
   const content = {
     badge: heroContent?.badge || "Sambal Artisanal Terbaik 2024",
-    title: heroContent?.title || "RASAKAN <br /><span class=\"text-transparent bg-clip-text bg-gradient-to-r from-red-600 to-orange-600\">KEPEDASAN <br /></span>HAKIKI.",
-    description: heroContent?.description || "Kombinasi sempurna antara cabai segar pilihan dan rempah rahasia. Homemade, tanpa pengawet, dan 100% Halal.",
-    imageUrl: heroContent?.imageUrl || "/attached_assets/hero.png"
+    title:
+      heroContent?.title ||
+      'RASAKAN <br /><span class="text-transparent bg-clip-text bg-gradient-to-r from-red-600 to-orange-600">KEPEDASAN <br /></span>HAKIKI.',
+    description:
+      heroContent?.description ||
+      "Kombinasi sempurna antara cabai segar pilihan dan rempah rahasia. Homemade, tanpa pengawet, dan 100% Halal.",
+    imageUrl: heroContent?.imageUrl || "/attached_assets/hero.png",
   };
 
   if (isLoading) {
@@ -33,7 +41,6 @@ export default function HeroSection() {
 
       <div className="max-w-7xl mx-auto w-full">
         <div className="grid lg:grid-cols-2 gap-12 items-center">
-
           {/* Left Content */}
           <div className="space-y-8 relative z-10 text-center lg:text-left">
             <motion.div
@@ -43,7 +50,9 @@ export default function HeroSection() {
             >
               <div className="inline-flex items-center gap-2 px-4 py-2 bg-red-50 text-red-600 rounded-full mb-6 border border-red-100">
                 <Flame className="w-4 h-4" />
-                <span className="text-xs font-bold uppercase tracking-widest">{content.badge}</span>
+                <span className="text-xs font-bold uppercase tracking-widest">
+                  {content.badge}
+                </span>
               </div>
 
               <h1
@@ -63,12 +72,19 @@ export default function HeroSection() {
               className="flex flex-col sm:flex-row items-center justify-center lg:justify-start gap-4 pt-4"
             >
               <Link href="/catalog">
-                <Button size="lg" className="bg-slate-900 hover:bg-slate-800 text-white rounded-full px-10 h-14 text-lg font-bold transition-all hover:scale-105 shadow-xl shadow-slate-200">
+                <Button
+                  size="lg"
+                  className="bg-slate-900 hover:bg-slate-800 text-white rounded-full px-10 h-14 text-lg font-bold transition-all hover:scale-105 shadow-xl shadow-slate-200"
+                >
                   Lihat Menu <ChevronRight className="ml-2 w-5 h-5" />
                 </Button>
               </Link>
               <a href="#how-to-order">
-                <Button variant="ghost" size="lg" className="text-slate-600 font-bold hover:text-red-600 transition-colors">
+                <Button
+                  variant="ghost"
+                  size="lg"
+                  className="text-slate-600 font-bold hover:text-red-600 transition-colors"
+                >
                   Cara Pesan
                 </Button>
               </a>
@@ -83,10 +99,11 @@ export default function HeroSection() {
             className="relative"
           >
             <div className="relative z-10 rounded-[2.5rem] overflow-hidden shadow-2xl border-[12px] border-white transform rotate-3 hover:rotate-0 transition-transform duration-700">
-              <img
+              <OptimizedImage
                 src={content.imageUrl}
                 alt="Sambal Premium"
                 className="w-full aspect-square object-cover"
+                priority
               />
               <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent" />
             </div>
@@ -101,23 +118,37 @@ export default function HeroSection() {
                 <ShieldCheck className="w-6 h-6 text-emerald-600" />
               </div>
               <div>
-                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-tighter">Kualitas</p>
-                <p className="text-sm font-black text-slate-800 leading-none">Terjamin</p>
+                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-tighter">
+                  Kualitas
+                </p>
+                <p className="text-sm font-black text-slate-800 leading-none">
+                  Terjamin
+                </p>
               </div>
             </motion.div>
 
             <motion.div
               animate={{ y: [0, 15, 0] }}
-              transition={{ duration: 5, repeat: Infinity, ease: "easeInOut", delay: 0.5 }}
+              transition={{
+                duration: 5,
+                repeat: Infinity,
+                ease: "easeInOut",
+                delay: 0.5,
+              }}
               className="absolute -bottom-10 -right-6 z-20 bg-white p-5 rounded-2xl shadow-xl border border-slate-50"
             >
-              <p className="text-[10px] font-bold text-slate-400 uppercase mb-1">Pengiriman</p>
-              <p className="text-sm font-black text-slate-800">Cepat Seluruh Indonesia</p>
+              <p className="text-[10px] font-bold text-slate-400 uppercase mb-1">
+                Pengiriman
+              </p>
+              <p className="text-sm font-black text-slate-800">
+                Cepat Seluruh Indonesia
+              </p>
             </motion.div>
           </motion.div>
-
         </div>
       </div>
     </section>
   );
 }
+
+

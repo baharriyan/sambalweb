@@ -8,3 +8,5 @@ export function cn(...inputs: ClassValue[]) {
 export function formatRupiah(amount: number) {
   return `Rp${amount.toLocaleString("id-ID")}`;
 }
+
+

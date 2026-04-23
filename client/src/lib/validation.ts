@@ -14,15 +14,17 @@ export const loginSchema = z.object({
 
 export type LoginInput = z.infer<typeof loginSchema>;
 
-export const registerSchema = z.object({
-  name: z.string().min(2, "Nama minimal 2 karakter"),
-  email: z.string().email("Email tidak valid"),
-  password: z.string().min(8, "Password minimal 8 karakter"),
-  passwordConfirm: z.string(),
-}).refine((data) => data.password === data.passwordConfirm, {
-  message: "Password tidak sesuai",
-  path: ["passwordConfirm"],
-});
+export const registerSchema = z
+  .object({
+    name: z.string().min(2, "Nama minimal 2 karakter"),
+    email: z.string().email("Email tidak valid"),
+    password: z.string().min(8, "Password minimal 8 karakter"),
+    passwordConfirm: z.string(),
+  })
+  .refine(data => data.password === data.passwordConfirm, {
+    message: "Password tidak sesuai",
+    path: ["passwordConfirm"],
+  });
 
 export type RegisterInput = z.infer<typeof registerSchema>;
 
@@ -34,14 +36,16 @@ export const updateProfileSchema = z.object({
 
 export type UpdateProfileInput = z.infer<typeof updateProfileSchema>;
 
-export const changePasswordSchema = z.object({
-  currentPassword: z.string().min(1, "Masukkan password saat ini"),
-  newPassword: z.string().min(8, "Password baru minimal 8 karakter"),
-  confirmPassword: z.string(),
-}).refine((data) => data.newPassword === data.confirmPassword, {
-  message: "Password tidak sesuai",
-  path: ["confirmPassword"],
-});
+export const changePasswordSchema = z
+  .object({
+    currentPassword: z.string().min(1, "Masukkan password saat ini"),
+    newPassword: z.string().min(8, "Password baru minimal 8 karakter"),
+    confirmPassword: z.string(),
+  })
+  .refine(data => data.newPassword === data.confirmPassword, {
+    message: "Password tidak sesuai",
+    path: ["confirmPassword"],
+  });
 
 export type ChangePasswordInput = z.infer<typeof changePasswordSchema>;
 
@@ -50,12 +54,14 @@ export type ChangePasswordInput = z.infer<typeof changePasswordSchema>;
 export const addressSchema = z.object({
   label: z.string().optional().or(z.literal("")),
   fullName: z.string().min(2, "Nama lengkap minimal 2 karakter"),
-  phone: z.string()
+  phone: z
+    .string()
     .min(10, "Nomor telepon minimal 10 digit")
     .regex(/^(\+62|0)[0-9]{9,12}$/, "Format nomor telepon tidak valid"),
   address: z.string().min(10, "Alamat minimal 10 karakter"),
   city: z.string().min(2, "Kota minimal 2 karakter"),
-  postalCode: z.string()
+  postalCode: z
+    .string()
     .min(5, "Kode pos minimal 5 digit")
     .max(5, "Kode pos maksimal 5 digit")
     .regex(/^\d+$/, "Kode pos hanya boleh angka")
@@ -70,12 +76,23 @@ export type AddressInput = z.infer<typeof addressSchema>;
 
 export const productSchema = z.object({
   name: z.string().min(3, "Nama produk minimal 3 karakter"),
-  slug: z.string().min(3, "Slug minimal 3 karakter").regex(/^[a-z0-9-]+$/, "Slug hanya boleh huruf kecil, angka, dan dash"),
+  slug: z
+    .string()
+    .min(3, "Slug minimal 3 karakter")
+    .regex(/^[a-z0-9-]+$/, "Slug hanya boleh huruf kecil, angka, dan dash"),
   description: z.string().optional(),
   price: z.number().int().min(1000, "Harga minimal 1000"),
   stock: z.number().int().min(0, "Stock tidak boleh negatif"),
-  spiceLevel: z.number().int().min(1, "Tingkat pedas minimal 1").max(5, "Tingkat pedas maksimal 5"),
-  imageUrl: z.string().url("URL gambar tidak valid").optional().or(z.literal("")),
+  spiceLevel: z
+    .number()
+    .int()
+    .min(1, "Tingkat pedas minimal 1")
+    .max(5, "Tingkat pedas maksimal 5"),
+  imageUrl: z
+    .string()
+    .url("URL gambar tidak valid")
+    .optional()
+    .or(z.literal("")),
   isActive: z.boolean().default(true),
 });
 
@@ -98,13 +115,19 @@ export type CartItemInput = z.infer<typeof cartItemSchema>;
 
 export const checkoutSchema = z.object({
   customerName: z.string().min(2, "Nama pelanggan minimal 2 karakter"),
-  customerPhone: z.string()
+  customerPhone: z
+    .string()
     .min(10, "Nomor telepon minimal 10 digit")
     .regex(/^(\+62|0)[0-9]{9,12}$/, "Format nomor telepon tidak valid"),
-  customerEmail: z.string().email("Email tidak valid").optional().or(z.literal("")),
+  customerEmail: z
+    .string()
+    .email("Email tidak valid")
+    .optional()
+    .or(z.literal("")),
   shippingAddress: z.string().min(10, "Alamat pengiriman minimal 10 karakter"),
   shippingCity: z.string().min(2, "Kota minimal 2 karakter"),
-  shippingPostalCode: z.string()
+  shippingPostalCode: z
+    .string()
     .min(5, "Kode pos minimal 5 digit")
     .max(5, "Kode pos maksimal 5 digit")
     .regex(/^\d+$/, "Kode pos hanya boleh angka")
@@ -120,7 +143,13 @@ export const checkoutSchema = z.object({
 
 export type CheckoutInput = z.infer<typeof checkoutSchema>;
 
-export const orderStatusSchema = z.enum(["PENDING_PAYMENT", "PROCESSING", "SHIPPED", "COMPLETED", "CANCELLED"]);
+export const orderStatusSchema = z.enum([
+  "PENDING_PAYMENT",
+  "PROCESSING",
+  "SHIPPED",
+  "COMPLETED",
+  "CANCELLED",
+]);
 
 export type OrderStatus = z.infer<typeof orderStatusSchema>;
 
@@ -175,7 +204,10 @@ export type PaginationInput = z.infer<typeof paginationSchema>;
  * Validate form data
  * @returns { data, errors } - data jika valid, errors jika tidak
  */
-export async function validateForm<T>(schema: z.ZodSchema, data: unknown): Promise<{
+export async function validateForm<T>(
+  schema: z.ZodSchema,
+  data: unknown
+): Promise<{
   data: T | null;
   errors: Record<string, string> | null;
 }> {
@@ -185,7 +217,7 @@ export async function validateForm<T>(schema: z.ZodSchema, data: unknown): Promi
   } catch (error) {
     if (error instanceof z.ZodError) {
       const errors: Record<string, string> = {};
-      error.issues.forEach((err) => {
+      error.issues.forEach(err => {
         const path = err.path.join(".");
         errors[path] = err.message;
       });
@@ -223,3 +255,5 @@ export function formatPhoneNumber(phone: string): string {
 
   return phone;
 }
+
+

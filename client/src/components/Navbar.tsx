@@ -1,9 +1,17 @@
 import { useState, useEffect } from "react";
 import { Link, useLocation } from "wouter";
 import { useAuth } from "@/_core/hooks/useAuth";
-import { useCart } from "@/contexts/CartContext";
+import { useCart } from "@/contexts/CartContextHook";
 import { Button } from "@/components/ui/button";
-import { ShoppingCart, Menu, X, LogOut, LayoutDashboard, Settings, User, Heart } from "lucide-react";
+import {
+  ShoppingCart,
+  Menu,
+  X,
+  LogOut,
+  Settings,
+  User,
+  Heart,
+} from "lucide-react";
 import { MiniCartDrawer } from "@/components/MiniCartDrawer";
 
 export default function Navbar() {
@@ -11,7 +19,7 @@ export default function Navbar() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isCartOpen, setIsCartOpen] = useState(false);
   const [location] = useLocation();
-  const { user, logout } = useAuth();
+  const { user } = useAuth();
   const { getTotalItems } = useCart();
 
   useEffect(() => {
@@ -45,19 +53,19 @@ export default function Navbar() {
           <div className="flex justify-between items-center h-16 md:h-20">
             {/* Logo */}
             <Link href="/">
-              <a className="flex items-center space-x-2 cursor-pointer">
+              <div className="flex items-center space-x-2 cursor-pointer">
                 <div className="w-10 h-10 bg-gradient-to-br from-red-600 to-orange-600 rounded-lg flex items-center justify-center">
                   <span className="text-white font-bold text-lg">S</span>
                 </div>
                 <span className="font-bold text-lg text-gray-900 hidden sm:inline">
                   Sambal Premium
                 </span>
-              </a>
+              </div>
             </Link>
 
             {/* Desktop Navigation */}
             <div className="hidden md:flex items-center space-x-1">
-              {navItems.map((item) => (
+              {navItems.map(item =>
                 item.href.includes("#") ? (
                   <a
                     key={item.href}
@@ -83,7 +91,7 @@ export default function Navbar() {
                     </a>
                   </Link>
                 )
-              ))}
+              )}
               {user && (
                 <Link href="/dashboard">
                   <a className="px-3 py-2 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-100">
@@ -125,13 +133,21 @@ export default function Navbar() {
               ) : (
                 <div className="flex items-center space-x-3">
                   <div className="text-right hidden sm:block">
-                    <p className="text-sm font-medium text-gray-900">{user.name}</p>
-                    <p className="text-xs text-gray-500">{user.role === "admin" ? "Admin" : "Pelanggan"}</p>
+                    <p className="text-sm font-medium text-gray-900">
+                      {user.name}
+                    </p>
+                    <p className="text-xs text-gray-500">
+                      {user.role === "admin" ? "Admin" : "Pelanggan"}
+                    </p>
                   </div>
                   <div className="flex items-center space-x-2">
                     {user.role === "admin" && (
                       <Link href="/rahasia">
-                        <Button variant="outline" size="sm" className="hidden sm:flex">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="hidden sm:flex"
+                        >
                           <Settings className="w-4 h-4 mr-1" />
                           Admin
                         </Button>
@@ -139,7 +155,11 @@ export default function Navbar() {
                     )}
                     {user.role !== "admin" && (
                       <Link href="/dashboard">
-                        <Button variant="outline" size="sm" className="hidden sm:flex">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="hidden sm:flex"
+                        >
                           <User className="w-4 h-4 mr-1" />
                           Profil
                         </Button>
@@ -147,17 +167,22 @@ export default function Navbar() {
                     )}
                     {user.role !== "admin" && (
                       <Link href="/wishlist">
-                        <Button variant="outline" size="sm" className="hidden sm:flex">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="hidden sm:flex"
+                        >
                           <Heart className="w-4 h-4 mr-1 text-red-600" />
                           Wishlist
                         </Button>
                       </Link>
                     )}
-                    <Link href={user.role === "admin" ? "/rahasia/logout" : "/logout"}>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                      >
+                    <Link
+                      href={
+                        user.role === "admin" ? "/rahasia/logout" : "/logout"
+                      }
+                    >
+                      <Button variant="ghost" size="sm">
                         <LogOut className="w-4 h-4" />
                       </Button>
                     </Link>
@@ -183,7 +208,7 @@ export default function Navbar() {
           {isMobileMenuOpen && (
             <div className="md:hidden border-t border-gray-200 bg-white">
               <div className="px-2 pt-2 pb-3 space-y-1">
-                {navItems.map((item) => (
+                {navItems.map(item =>
                   item.href.includes("#") ? (
                     <a
                       key={item.href}
@@ -211,7 +236,7 @@ export default function Navbar() {
                       </a>
                     </Link>
                   )
-                ))}
+                )}
                 {user && (
                   <Link href="/dashboard">
                     <a className="block px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:bg-gray-100">
@@ -227,7 +252,10 @@ export default function Navbar() {
                       </Button>
                     </Link>
                     <Link href="/register">
-                      <Button size="sm" className="w-full bg-red-600 hover:bg-red-700">
+                      <Button
+                        size="sm"
+                        className="w-full bg-red-600 hover:bg-red-700"
+                      >
                         Daftar
                       </Button>
                     </Link>
@@ -240,7 +268,12 @@ export default function Navbar() {
       </nav>
 
       {/* Mini Cart Drawer */}
-      <MiniCartDrawer isOpen={isCartOpen} onClose={() => setIsCartOpen(false)} />
+      <MiniCartDrawer
+        isOpen={isCartOpen}
+        onClose={() => setIsCartOpen(false)}
+      />
     </>
   );
 }
+
+

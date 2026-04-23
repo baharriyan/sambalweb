@@ -36,10 +36,8 @@ export async function generateProductImage(
 
   const {
     prompt,
-    negativePrompt = "",
     numOutputs = 1,
     imageSize = "512x512",
-    seed = Math.floor(Math.random() * 1000000),
   } = params;
 
   try {
@@ -78,11 +76,11 @@ export async function generateProductImage(
       });
     }
 
-    console.log(`[Image Generation] Generated ${numOutputs} images for: "${prompt}"`);
     return generatedImages;
   } catch (error) {
-    console.error("[Image Generation Error]", error);
-    throw new Error("Failed to generate image: " + String(error));
+    throw new Error("Failed to generate image: " + String(error), {
+      cause: error,
+    });
   }
 }
 
@@ -122,13 +120,18 @@ export function validatePrompt(prompt: string): boolean {
   // Block potentially harmful prompts
   const blockedKeywords = ["NSFW", "violent", "hateful", "illegal"];
   const lowerPrompt = prompt.toLowerCase();
-  return !blockedKeywords.some((keyword) => lowerPrompt.includes(keyword.toLowerCase()));
+  return !blockedKeywords.some(keyword =>
+    lowerPrompt.includes(keyword.toLowerCase())
+  );
 }
 
 /**
  * Create image generation task (for background processing)
  */
-export async function createImageGenerationTask(productId: number, prompt: string) {
+export async function createImageGenerationTask(
+  productId: number,
+  prompt: string
+) {
   // TODO: Implement queue system (Bull, RabbitMQ, etc.)
   // This would:
   // 1. Create task in database/queue
@@ -137,11 +140,10 @@ export async function createImageGenerationTask(productId: number, prompt: strin
   // 4. Update product with generated image URL when done
   // 5. Send notification to admin
 
-  console.log(`[Image Generation Task] Created for product ${productId}: ${prompt}`);
-
   return {
     taskId: `task_${Date.now()}`,
     status: "pending",
     createdAt: new Date(),
   };
 }
+

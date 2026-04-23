@@ -1,13 +1,11 @@
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import { useLocation } from "wouter";
-import { useCart } from "@/contexts/CartContext";
+import { useCart } from "@/contexts/CartContextHook";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import {
   Drawer,
   DrawerClose,
   DrawerContent,
-  DrawerDescription,
   DrawerHeader,
   DrawerTitle,
 } from "@/components/ui/drawer";
@@ -28,18 +26,22 @@ interface MiniCartDrawerProps {
  */
 export function MiniCartDrawer({ isOpen, onClose }: MiniCartDrawerProps) {
   const [, navigate] = useLocation();
-  const { items, removeItem, updateQuantity, getTotalPrice, getTotalItems } = useCart();
+  const { items, removeItem, updateQuantity, getTotalPrice, getTotalItems } =
+    useCart();
   const [isProcessing, setIsProcessing] = useState(false);
 
   /**
    * Handle quantity increment
    */
-  const handleIncrement = async (cartItemId: number | string, currentQuantity: number) => {
+  const handleIncrement = async (
+    cartItemId: number | string,
+    currentQuantity: number
+  ) => {
     try {
       setIsProcessing(true);
       await updateQuantity(cartItemId, currentQuantity + 1);
-    } catch (error: any) {
-      toast.error(error.message || "Gagal update quantity");
+    } catch (error: unknown) {
+      toast.error(error instanceof Error ? error.message : "Gagal update quantity");
     } finally {
       setIsProcessing(false);
     }
@@ -48,7 +50,10 @@ export function MiniCartDrawer({ isOpen, onClose }: MiniCartDrawerProps) {
   /**
    * Handle quantity decrement
    */
-  const handleDecrement = async (cartItemId: number | string, currentQuantity: number) => {
+  const handleDecrement = async (
+    cartItemId: number | string,
+    currentQuantity: number
+  ) => {
     if (currentQuantity <= 1) {
       return handleRemoveItem(cartItemId);
     }
@@ -56,8 +61,8 @@ export function MiniCartDrawer({ isOpen, onClose }: MiniCartDrawerProps) {
     try {
       setIsProcessing(true);
       await updateQuantity(cartItemId, currentQuantity - 1);
-    } catch (error: any) {
-      toast.error(error.message || "Gagal update quantity");
+    } catch (error: unknown) {
+      toast.error(error instanceof Error ? error.message : "Gagal update quantity");
     } finally {
       setIsProcessing(false);
     }
@@ -71,8 +76,8 @@ export function MiniCartDrawer({ isOpen, onClose }: MiniCartDrawerProps) {
       setIsProcessing(true);
       await removeItem(cartItemId);
       toast.success("Item dihapus dari cart");
-    } catch (error: any) {
-      toast.error(error.message || "Gagal hapus item");
+    } catch (error: unknown) {
+      toast.error(error instanceof Error ? error.message : "Gagal hapus item");
     } finally {
       setIsProcessing(false);
     }
@@ -138,8 +143,11 @@ export function MiniCartDrawer({ isOpen, onClose }: MiniCartDrawerProps) {
             {/* Cart Items */}
             <ScrollArea className="flex-1">
               <div className="p-4 space-y-4">
-                {items.map((item) => (
-                  <div key={item.localId || item.id} className="flex gap-3 border rounded-lg p-3">
+                {items.map(item => (
+                  <div
+                    key={item.localId || item.id}
+                    className="flex gap-3 border rounded-lg p-3"
+                  >
                     {/* Product Image */}
                     {item.imageUrl && (
                       <img
@@ -166,7 +174,10 @@ export function MiniCartDrawer({ isOpen, onClose }: MiniCartDrawerProps) {
                           variant="outline"
                           className="h-7 w-7 p-0"
                           onClick={() =>
-                            handleDecrement(item.localId || item.id, item.quantity)
+                            handleDecrement(
+                              item.localId || item.id,
+                              item.quantity
+                            )
                           }
                           disabled={isProcessing}
                         >
@@ -182,7 +193,10 @@ export function MiniCartDrawer({ isOpen, onClose }: MiniCartDrawerProps) {
                           variant="outline"
                           className="h-7 w-7 p-0"
                           onClick={() =>
-                            handleIncrement(item.localId || item.id, item.quantity)
+                            handleIncrement(
+                              item.localId || item.id,
+                              item.quantity
+                            )
                           }
                           disabled={isProcessing}
                         >
@@ -194,7 +208,9 @@ export function MiniCartDrawer({ isOpen, onClose }: MiniCartDrawerProps) {
                           size="sm"
                           variant="ghost"
                           className="h-7 w-7 p-0 ml-auto text-destructive hover:text-destructive hover:bg-destructive/10"
-                          onClick={() => handleRemoveItem(item.localId || item.id)}
+                          onClick={() =>
+                            handleRemoveItem(item.localId || item.id)
+                          }
                           disabled={isProcessing}
                         >
                           <Trash2 className="h-3 w-3" />
@@ -203,9 +219,8 @@ export function MiniCartDrawer({ isOpen, onClose }: MiniCartDrawerProps) {
 
                       {/* Subtotal */}
                       <p className="text-xs text-muted-foreground mt-2">
-                        Subtotal: Rp{(item.price * item.quantity).toLocaleString(
-                          "id-ID"
-                        )}
+                        Subtotal: Rp
+                        {(item.price * item.quantity).toLocaleString("id-ID")}
                       </p>
                     </div>
                   </div>
@@ -260,3 +275,5 @@ export function MiniCartDrawer({ isOpen, onClose }: MiniCartDrawerProps) {
     </Drawer>
   );
 }
+
+

@@ -1,6 +1,7 @@
 # Sambal E-Commerce Setup Guide
 
 ## Prerequisites
+
 - Node.js (v18+)
 - pnpm (package manager)
 - MySQL database running
@@ -8,11 +9,13 @@
 ## Setup Steps
 
 ### 1. Install Dependencies
+
 ```bash
 pnpm install
 ```
 
 ### 2. Configure Environment Variables
+
 The `.env` file has been created with default values. Update it with your actual credentials:
 
 ```env
@@ -28,18 +31,22 @@ OWNER_OPEN_ID=dev-owner-id
 ```
 
 ### 3. Database Setup
+
 Make sure MySQL is running and create the database:
+
 ```bash
 # Using MySQL client
 mysql -u root -p -e "CREATE DATABASE sambal_ecommerce CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;"
 ```
 
 ### 4. Run Database Migrations
+
 ```bash
 pnpm run db:push
 ```
 
 ### 5. Start Development Server
+
 ```bash
 pnpm run dev
 ```
@@ -59,13 +66,17 @@ The app will be available at `http://localhost:3000` (or next available port).
 ## Troubleshooting
 
 ### PORT_ALREADY_IN_USE
+
 The app auto-finds available ports from 3000-3019.
 
 ### DATABASE_URL Missing
+
 Ensure `.env` file has `DATABASE_URL` set with valid MySQL credentials.
 
 ### Dependencies Issues
+
 Try clearing pnpm cache:
+
 ```bash
 pnpm store prune
 pnpm install

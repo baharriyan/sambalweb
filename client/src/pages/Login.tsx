@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useLocation } from "wouter";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { Button } from "@/components/ui/button";
@@ -11,7 +11,7 @@ import { trpc } from "@/lib/trpc";
 
 export default function Login() {
   const [, navigate] = useLocation();
-  const { user, loading, refresh } = useAuth();
+  const { loading, refresh } = useAuth();
   const utils = trpc.useUtils();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -34,20 +34,23 @@ export default function Login() {
         password,
         isAdminLogin: false,
       });
-      
+
       // Update cache tRPC secara manual agar state user langsung berubah
       if (response.user) {
         utils.auth.me.setData(undefined, response.user);
       }
-      
+
       await refresh();
       if (response.user?.role === "admin") {
         navigate("/rahasia/dashboard");
       } else {
         navigate("/dashboard");
       }
-    } catch (err: any) {
-      setError(err.message || "Login gagal. Silakan coba lagi.");
+    } catch (err: unknown) {
+      // Use proper error extraction without console.error
+      const errorMessage =
+        err instanceof Error ? err.message : "Login gagal. Silakan coba lagi.";
+      setError(errorMessage);
     } finally {
       setIsSubmitting(false);
     }
@@ -98,7 +101,7 @@ export default function Login() {
                   type="email"
                   placeholder="nama@example.com"
                   value={email}
-                  onChange={(e) => setEmail(e.target.value)}
+                  onChange={e => setEmail(e.target.value)}
                   required
                   disabled={isSubmitting}
                 />
@@ -111,7 +114,7 @@ export default function Login() {
                   type="password"
                   placeholder="Masukkan password"
                   value={password}
-                  onChange={(e) => setPassword(e.target.value)}
+                  onChange={e => setPassword(e.target.value)}
                   required
                   disabled={isSubmitting}
                 />
@@ -158,14 +161,22 @@ export default function Login() {
 
             {/* Register Link */}
             <a href="/register">
-              <Button variant="outline" size="lg" className="w-full border-2 border-red-600 text-red-600 hover:bg-red-50 font-semibold h-12">
+              <Button
+                variant="outline"
+                size="lg"
+                className="w-full border-2 border-red-600 text-red-600 hover:bg-red-50 font-semibold h-12"
+              >
                 Buat Akun Baru
               </Button>
             </a>
 
             {/* Back to Home */}
             <a href="/">
-              <Button variant="ghost" size="sm" className="w-full text-gray-600 hover:text-gray-900">
+              <Button
+                variant="ghost"
+                size="sm"
+                className="w-full text-gray-600 hover:text-gray-900"
+              >
                 Kembali ke Beranda
               </Button>
             </a>
@@ -191,3 +202,5 @@ export default function Login() {
     </div>
   );
 }
+
+

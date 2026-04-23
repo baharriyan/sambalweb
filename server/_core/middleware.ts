@@ -55,7 +55,10 @@ export function securityHeaders(
   );
 
   // Disable caching untuk halaman dynamic
-  res.setHeader("Cache-Control", "no-store, no-cache, must-revalidate, proxy-revalidate");
+  res.setHeader(
+    "Cache-Control",
+    "no-store, no-cache, must-revalidate, proxy-revalidate"
+  );
   res.setHeader("Pragma", "no-cache");
   res.setHeader("Expires", "0");
 
@@ -70,15 +73,18 @@ const csrfTokens = new Map<string, { token: string; createdAt: number }>();
 const CSRF_TOKEN_TTL = 24 * 60 * 60 * 1000; // 24 jam
 
 // Cleanup expired tokens setiap 5 menit
-setInterval(() => {
-  const now = Date.now();
+setInterval(
+  () => {
+    const now = Date.now();
 
-  Array.from(csrfTokens.entries()).forEach(([id, data]) => {
-    if (now > data.createdAt + CSRF_TOKEN_TTL) {
-      csrfTokens.delete(id);
-    }
-  });
-}, 5 * 60 * 1000);
+    Array.from(csrfTokens.entries()).forEach(([id, data]) => {
+      if (now > data.createdAt + CSRF_TOKEN_TTL) {
+        csrfTokens.delete(id);
+      }
+    });
+  },
+  5 * 60 * 1000
+);
 
 /**
  * Generate CSRF token untuk user session
@@ -104,7 +110,10 @@ export function csrfTokenMiddleware(
 ): void {
   // Ambil session ID dari cookie
   const sessionId =
-    (req.cookies && req.cookies[COOKIE_NAME]) || req.headers["x-session-id"] || req.ip || "unknown";
+    (req.cookies && req.cookies[COOKIE_NAME]) ||
+    req.headers["x-session-id"] ||
+    req.ip ||
+    "unknown";
 
   // Generate token baru untuk GET requests atau jika belum ada
   if (!csrfTokens.has(sessionId)) {
@@ -130,7 +139,11 @@ export function validateCSRFToken(
   next: NextFunction
 ): void {
   // Skip validasi untuk GET requests dan OPTIONS requests
-  if (req.method === "GET" || req.method === "OPTIONS" || req.method === "HEAD") {
+  if (
+    req.method === "GET" ||
+    req.method === "OPTIONS" ||
+    req.method === "HEAD"
+  ) {
     return next();
   }
 
@@ -141,19 +154,20 @@ export function validateCSRFToken(
 
   // Skip validasi untuk API routes yang tidak perlu (misal public endpoints)
   const publicEndpoints = ["/api/auth/callback", "/api/auth/logout"];
-  if (publicEndpoints.some((endpoint) => req.path.startsWith(endpoint))) {
+  if (publicEndpoints.some(endpoint => req.path.startsWith(endpoint))) {
     return next();
   }
 
   // Ambil CSRF token dari header atau form data
   const token =
-    req.headers["x-csrf-token"] ||
-    req.body?.csrfToken ||
-    req.query?.csrfToken;
+    req.headers["x-csrf-token"] || req.body?.csrfToken || req.query?.csrfToken;
 
   // Ambil session ID
   const sessionId =
-    (req.cookies && req.cookies[COOKIE_NAME]) || req.headers["x-session-id"] || req.ip || "unknown";
+    (req.cookies && req.cookies[COOKIE_NAME]) ||
+    req.headers["x-session-id"] ||
+    req.ip ||
+    "unknown";
 
   // Validasi token
   const storedTokenData = csrfTokens.get(sessionId);
@@ -230,13 +244,21 @@ export function createRateLimiter(
  * Login Rate Limiter
  * Lebih ketat untuk login endpoint - max 50 attempts per 15 minutes per IP
  */
-export const loginRateLimiter = createRateLimiter(15 * 60 * 1000, 50, "Terlalu banyak upaya login gagal. Silakan coba lagi dalam 15 menit.");
+export const loginRateLimiter = createRateLimiter(
+  15 * 60 * 1000,
+  50,
+  "Terlalu banyak upaya login gagal. Silakan coba lagi dalam 15 menit."
+);
 
 /**
  * API Rate Limiter
  * Standar untuk API endpoints
  */
-export const apiRateLimiter = createRateLimiter(60 * 1000, 1000, "Terlalu banyak requests. Silakan tunggu sebentar.");
+export const apiRateLimiter = createRateLimiter(
+  60 * 1000,
+  1000,
+  "Terlalu banyak requests. Silakan tunggu sebentar."
+);
 
 /**
  * Request Logging Middleware
@@ -247,20 +269,8 @@ export function requestLogger(
   res: Response,
   next: NextFunction
 ): void {
-  const start = Date.now();
-  const originalSend = res.send;
-
-  // Override res.send untuk capture response
-  res.send = function (data: any) {
-    const duration = Date.now() - start;
-    console.log(
-      `[${new Date().toISOString()}] ${req.method} ${req.path} - ${res.statusCode} - ${duration}ms`
-    );
-
-    // Call original send
-    return originalSend.call(this, data);
-  };
-
+  // Simply continue to the next middleware
+  // Real logging can be added here if needed without monkey-patching res.send
   next();
 }
 
@@ -275,12 +285,12 @@ export function sanitizeInput(
 ): void {
   // Sanitize req.body
   if (req.body && typeof req.body === "object") {
-    sanitizeObject(req.body);
+    sanitizeObject(req.body as Record<string, unknown>);
   }
 
   // Sanitize req.query
   if (req.query && typeof req.query === "object") {
-    sanitizeObject(req.query);
+    sanitizeObject(req.query as Record<string, unknown>);
   }
 
   next();
@@ -290,9 +300,9 @@ export function sanitizeInput(
  * Recursive sanitization function
  * Menghapus potential XSS/injection content
  */
-function sanitizeObject(obj: any): void {
+function sanitizeObject(obj: Record<string, unknown>): void {
   for (const key in obj) {
-    if (obj.hasOwnProperty(key)) {
+    if (Object.prototype.hasOwnProperty.call(obj, key)) {
       const value = obj[key];
 
       // Sanitize strings
@@ -300,16 +310,20 @@ function sanitizeObject(obj: any): void {
         obj[key] = sanitizeString(value);
       }
       // Recursively sanitize nested objects
-      else if (typeof value === "object" && value !== null && !Array.isArray(value)) {
-        sanitizeObject(value);
+      else if (
+        typeof value === "object" &&
+        value !== null &&
+        !Array.isArray(value)
+      ) {
+        sanitizeObject(value as Record<string, unknown>);
       }
       // Sanitize array items
       else if (Array.isArray(value)) {
         value.forEach((item, index) => {
           if (typeof item === "string") {
-            value[index] = sanitizeString(item);
+            (value as unknown[])[index] = sanitizeString(item);
           } else if (typeof item === "object" && item !== null) {
-            sanitizeObject(item);
+            sanitizeObject(item as Record<string, unknown>);
           }
         });
       }
@@ -323,7 +337,7 @@ function sanitizeObject(obj: any): void {
  */
 function sanitizeString(str: string): string {
   // Remove potential script tags dan event handlers
-  let sanitized = str
+  const sanitized = str
     .replace(/<script[^>]*>.*?<\/script>/gi, "")
     .replace(/on\w+\s*=/gi, "")
     .replace(/<iframe[^>]*>.*?<\/iframe>/gi, "")

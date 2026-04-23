@@ -1,15 +1,21 @@
-import { useState, useEffect } from "react";
+import { useState, useMemo } from "react";
 import { useLocation } from "wouter";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
-import { trpc } from "@/lib/trpc";
-import { useCart } from "@/contexts/CartContext";
+import { trpc, RouterOutputs } from "@/lib/trpc";
+import { useCart } from "@/contexts/CartContextHook";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { Loader2 } from "lucide-react";
 
@@ -24,6 +30,8 @@ const BANKS = [
   { id: "Mandiri", name: "Mandiri" },
   { id: "BNI", name: "BNI" },
 ];
+
+type Address = RouterOutputs["addresses"]["list"][number];
 
 export default function Checkout() {
   const [, navigate] = useLocation();
@@ -44,41 +52,42 @@ export default function Checkout() {
     notes: "",
   });
 
-  const [shippingCost, setShippingCost] = useState(0);
   const [isLoading, setIsLoading] = useState(false);
   const [selectedAddressId, setSelectedAddressId] = useState<string>("manual");
 
   // Fetch Provinces & Cost based on Zone (No API needed)
   const { data: provinces } = trpc.shipping.getProvinces.useQuery();
-  const { data: costData, isLoading: isCostLoading } = trpc.shipping.getCost.useQuery(
-    { 
-      provinceId: formData.shippingProvinceId,
-      courier: formData.shippingCourier 
-    },
-    { 
-      enabled: !!formData.shippingProvinceId,
-      refetchOnWindowFocus: false 
-    }
-  );
+  const { data: costData, isLoading: isCostLoading } =
+    trpc.shipping.getCost.useQuery(
+      {
+        provinceId: formData.shippingProvinceId,
+        courier: formData.shippingCourier,
+      },
+      {
+        enabled: !!formData.shippingProvinceId,
+        refetchOnWindowFocus: false,
+      }
+    );
 
-  const { data: addresses } = trpc.addresses.list.useQuery(undefined, { enabled: !!user });
-  
-  useEffect(() => {
-    if (costData) {
-      setShippingCost(costData.totalCost);
-    }
-  }, [costData]);
+  const { data: addresses } = trpc.addresses.list.useQuery(undefined, {
+    enabled: !!user,
+  });
+
+  // Memoize shipping cost from costData
+  const shippingCost = useMemo(() => costData?.totalCost || 0, [costData]);
 
   const subtotal = getTotalPrice();
   const total = subtotal + shippingCost;
 
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+  const handleInputChange = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
+  ) => {
     const { name, value } = e.target;
-    setFormData((prev) => ({ ...prev, [name]: value }));
+    setFormData(prev => ({ ...prev, [name]: value }));
   };
 
   const handleSelectChange = (name: string, value: string) => {
-    setFormData((prev) => ({ ...prev, [name]: value }));
+    setFormData(prev => ({ ...prev, [name]: value }));
   };
 
   const handleAddressSelect = (addressId: string) => {
@@ -96,9 +105,12 @@ export default function Checkout() {
 
     const address = addresses?.find(a => a.id.toString() === addressId);
     if (address) {
-      // Find matching province ID by name (simulated)
-      const matchingProvince = provinces?.find(p => p.name.toLowerCase() === ((address as any).province || "").toLowerCase());
-      
+      // Use explicit type or optional chaining for address fields
+      const provinceName = (address as Record<string, unknown>).province as string || "";
+      const matchingProvince = provinces?.find(
+        p => p.name.toLowerCase() === provinceName.toLowerCase()
+      );
+
       setFormData(prev => ({
         ...prev,
         customerName: address.fullName,
@@ -117,7 +129,12 @@ export default function Checkout() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!formData.customerName || !formData.customerPhone || !formData.shippingAddress || !formData.shippingProvinceId) {
+    if (
+      !formData.customerName ||
+      !formData.customerPhone ||
+      !formData.shippingAddress ||
+      !formData.shippingProvinceId
+    ) {
       toast.error("Mohon isi semua field yang diperlukan");
       return;
     }
@@ -140,10 +157,13 @@ export default function Checkout() {
         shippingAddress: formData.shippingAddress,
         shippingCity: formData.shippingCity,
         shippingPostalCode: formData.shippingPostalCode,
-        shippingCourier: formData.shippingCourier as any,
+        shippingCourier: formData.shippingCourier as "jne" | "jnt" | "sicepat",
         shippingCost,
-        paymentMethod: formData.paymentMethod as any,
-        paymentBank: formData.paymentMethod === "TRANSFER_BANK" ? (formData.paymentBank as any) : undefined,
+        paymentMethod: formData.paymentMethod as "MIDTRANS" | "TRANSFER_BANK",
+        paymentBank:
+          formData.paymentMethod === "TRANSFER_BANK"
+            ? (formData.paymentBank as "BCA" | "Mandiri" | "BNI")
+            : undefined,
         notes: formData.notes,
         cartItems: orderCartItems,
       });
@@ -153,32 +173,53 @@ export default function Checkout() {
       sessionStorage.setItem("lastOrderNumber", result.orderNumber);
 
       if (formData.paymentMethod === "MIDTRANS") {
-        const { snapToken } = await getSnapTokenMutation.mutateAsync({ orderId: result.orderId });
-        
+        const { snapToken } = await getSnapTokenMutation.mutateAsync({
+          orderId: result.orderId,
+        });
+
         // Handle Demo Mode
         if (snapToken.startsWith("demo-snap-token")) {
           toast.info("Mode Simulasi: Melanjutkan ke konfirmasi pesanan...");
           setTimeout(() => {
-            navigate(`/order-confirmation?orderId=${result.orderId}&orderNumber=${result.orderNumber}`);
+            navigate(
+              `/order-confirmation?orderId=${result.orderId}&orderNumber=${result.orderNumber}`
+            );
           }, 1500);
           return;
         }
 
-        // @ts-ignore
+        // @ts-expect-error - Midtrans type mismatch
         window.snap.pay(snapToken, {
           onSuccess: async () => {
-            await updateStatusMutation.mutateAsync({ orderId: result.orderId, status: "PROCESSING" });
-            navigate(`/order-confirmation?orderId=${result.orderId}&orderNumber=${result.orderNumber}`);
+            await updateStatusMutation.mutateAsync({
+              orderId: result.orderId,
+              status: "PROCESSING",
+            });
+            navigate(
+              `/order-confirmation?orderId=${result.orderId}&orderNumber=${result.orderNumber}`
+            );
           },
-          onPending: () => navigate(`/order-confirmation?orderId=${result.orderId}&orderNumber=${result.orderNumber}`),
-          onError: () => navigate(`/order-confirmation?orderId=${result.orderId}&orderNumber=${result.orderNumber}`),
-          onClose: () => navigate(`/order-confirmation?orderId=${result.orderId}&orderNumber=${result.orderNumber}`)
+          onPending: () =>
+            navigate(
+              `/order-confirmation?orderId=${result.orderId}&orderNumber=${result.orderNumber}`
+            ),
+          onError: () =>
+            navigate(
+              `/order-confirmation?orderId=${result.orderId}&orderNumber=${result.orderNumber}`
+            ),
+          onClose: () =>
+            navigate(
+              `/order-confirmation?orderId=${result.orderId}&orderNumber=${result.orderNumber}`
+            ),
         });
         return;
       }
-      navigate(`/order-confirmation?orderId=${result.orderId}&orderNumber=${result.orderNumber}`);
-    } catch (error: any) {
-      toast.error(error.message || "Gagal membuat pesanan");
+      navigate(
+        `/order-confirmation?orderId=${result.orderId}&orderNumber=${result.orderNumber}`
+      );
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : "Gagal membuat pesanan";
+      toast.error(errorMessage);
     } finally {
       setIsLoading(false);
     }
@@ -192,14 +233,43 @@ export default function Checkout() {
           <h1 className="text-4xl font-bold mb-8 text-slate-800">Checkout</h1>
           <div className="grid lg:grid-cols-3 gap-8">
             <div className="lg:col-span-2">
-              <form id="checkout-form" onSubmit={handleSubmit} className="space-y-8">
+              <form
+                id="checkout-form"
+                onSubmit={handleSubmit}
+                className="space-y-8"
+              >
                 <Card className="border-slate-200 shadow-sm overflow-hidden border-t-4 border-t-red-600">
-                  <CardHeader className="bg-slate-50/50"><CardTitle className="text-xl">Informasi Pelanggan</CardTitle></CardHeader>
+                  <CardHeader className="bg-slate-50/50">
+                    <CardTitle className="text-xl">
+                      Informasi Pelanggan
+                    </CardTitle>
+                  </CardHeader>
                   <CardContent className="space-y-4 pt-6">
-                    <Input name="customerName" value={formData.customerName} onChange={handleInputChange} required placeholder="Nama Lengkap" className="h-11" />
+                    <Input
+                      name="customerName"
+                      value={formData.customerName}
+                      onChange={handleInputChange}
+                      required
+                      placeholder="Nama Lengkap"
+                      className="h-11"
+                    />
                     <div className="grid md:grid-cols-2 gap-4">
-                      <Input name="customerPhone" value={formData.customerPhone} onChange={handleInputChange} required placeholder="WhatsApp" className="h-11" />
-                      <Input name="customerEmail" type="email" value={formData.customerEmail} onChange={handleInputChange} placeholder="Email (Opsional)" className="h-11" />
+                      <Input
+                        name="customerPhone"
+                        value={formData.customerPhone}
+                        onChange={handleInputChange}
+                        required
+                        placeholder="WhatsApp"
+                        className="h-11"
+                      />
+                      <Input
+                        name="customerEmail"
+                        type="email"
+                        value={formData.customerEmail}
+                        onChange={handleInputChange}
+                        placeholder="Email (Opsional)"
+                        className="h-11"
+                      />
                     </div>
                   </CardContent>
                 </Card>
@@ -207,14 +277,26 @@ export default function Checkout() {
                 <Card className="border-slate-200 shadow-sm overflow-hidden border-t-4 border-t-red-600">
                   <CardHeader className="bg-slate-50/50">
                     <div className="flex justify-between items-center">
-                      <CardTitle className="text-xl">Alamat Pengiriman</CardTitle>
+                      <CardTitle className="text-xl">
+                        Alamat Pengiriman
+                      </CardTitle>
                       {addresses && addresses.length > 0 && (
-                        <Select value={selectedAddressId} onValueChange={handleAddressSelect}>
-                          <SelectTrigger className="w-48 h-9 text-xs"><SelectValue placeholder="Pilih Alamat" /></SelectTrigger>
+                        <Select
+                          value={selectedAddressId}
+                          onValueChange={handleAddressSelect}
+                        >
+                          <SelectTrigger className="w-48 h-9 text-xs">
+                            <SelectValue placeholder="Pilih Alamat" />
+                          </SelectTrigger>
                           <SelectContent>
                             <SelectItem value="manual">Alamat Baru</SelectItem>
-                            {addresses.map((addr: any) => (
-                              <SelectItem key={addr.id} value={addr.id.toString()}>{addr.label || addr.fullName}</SelectItem>
+                            {addresses.map((addr: Address) => (
+                              <SelectItem
+                                key={addr.id}
+                                value={addr.id.toString()}
+                              >
+                                {addr.label || addr.fullName}
+                              </SelectItem>
                             ))}
                           </SelectContent>
                         </Select>
@@ -222,64 +304,147 @@ export default function Checkout() {
                     </div>
                   </CardHeader>
                   <CardContent className="space-y-4 pt-6">
-                    <Textarea name="shippingAddress" value={formData.shippingAddress} onChange={handleInputChange} required placeholder="Alamat Lengkap (Jalan, No Rumah, RT/RW)" rows={2} />
-                    
+                    <Textarea
+                      name="shippingAddress"
+                      value={formData.shippingAddress}
+                      onChange={handleInputChange}
+                      required
+                      placeholder="Alamat Lengkap (Jalan, No Rumah, RT/RW)"
+                      rows={2}
+                    />
+
                     <div className="grid md:grid-cols-2 gap-4">
                       <div className="space-y-1">
-                        <label className="text-xs font-semibold text-slate-500 uppercase">Provinsi Tujuan *</label>
-                        <Select value={formData.shippingProvinceId} onValueChange={(val) => handleSelectChange("shippingProvinceId", val)}>
-                          <SelectTrigger className="h-11"><SelectValue placeholder="Pilih Provinsi" /></SelectTrigger>
+                        <label className="text-xs font-semibold text-slate-500 uppercase">
+                          Provinsi Tujuan *
+                        </label>
+                        <Select
+                          value={formData.shippingProvinceId}
+                          onValueChange={val =>
+                            handleSelectChange("shippingProvinceId", val)
+                          }
+                        >
+                          <SelectTrigger className="h-11">
+                            <SelectValue placeholder="Pilih Provinsi" />
+                          </SelectTrigger>
                           <SelectContent>
-                            {provinces?.map(p => <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>)}
+                            {provinces?.map(p => (
+                              <SelectItem key={p.id} value={p.id}>
+                                {p.name}
+                              </SelectItem>
+                            ))}
                           </SelectContent>
                         </Select>
                       </div>
                       <div className="space-y-1">
-                        <label className="text-xs font-semibold text-slate-500 uppercase">Kota/Kabupaten</label>
-                        <Input name="shippingCity" value={formData.shippingCity} onChange={handleInputChange} placeholder="Ketik Nama Kota" className="h-11" />
+                        <label className="text-xs font-semibold text-slate-500 uppercase">
+                          Kota/Kabupaten
+                        </label>
+                        <Input
+                          name="shippingCity"
+                          value={formData.shippingCity}
+                          onChange={handleInputChange}
+                          placeholder="Ketik Nama Kota"
+                          className="h-11"
+                        />
                       </div>
                     </div>
-                    <Input name="shippingPostalCode" value={formData.shippingPostalCode} onChange={handleInputChange} placeholder="Kode Pos" className="h-11" />
+                    <Input
+                      name="shippingPostalCode"
+                      value={formData.shippingPostalCode}
+                      onChange={handleInputChange}
+                      placeholder="Kode Pos"
+                      className="h-11"
+                    />
                   </CardContent>
                 </Card>
 
                 <Card className="border-slate-200 shadow-sm overflow-hidden border-t-4 border-t-red-600">
-                  <CardHeader className="bg-slate-50/50"><CardTitle className="text-xl">Metode Pengiriman & Pembayaran</CardTitle></CardHeader>
+                  <CardHeader className="bg-slate-50/50">
+                    <CardTitle className="text-xl">
+                      Metode Pengiriman & Pembayaran
+                    </CardTitle>
+                  </CardHeader>
                   <CardContent className="space-y-4 pt-6">
                     <div className="grid md:grid-cols-2 gap-4">
                       <div className="space-y-2">
-                        <label className="text-sm font-medium text-slate-700">Pilih Kurir</label>
-                        <Select value={formData.shippingCourier} onValueChange={(val) => handleSelectChange("shippingCourier", val)}>
-                          <SelectTrigger className="h-11"><SelectValue /></SelectTrigger>
+                        <label className="text-sm font-medium text-slate-700">
+                          Pilih Kurir
+                        </label>
+                        <Select
+                          value={formData.shippingCourier}
+                          onValueChange={val =>
+                            handleSelectChange("shippingCourier", val)
+                          }
+                        >
+                          <SelectTrigger className="h-11">
+                            <SelectValue />
+                          </SelectTrigger>
                           <SelectContent>
-                            {COURIERS.map(c => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}
+                            {COURIERS.map(c => (
+                              <SelectItem key={c.id} value={c.id}>
+                                {c.name}
+                              </SelectItem>
+                            ))}
                           </SelectContent>
                         </Select>
                       </div>
 
                       <div className="space-y-2">
-                        <label className="text-sm font-medium text-slate-700">Metode Pembayaran</label>
-                        <Select value={formData.paymentMethod} onValueChange={(val) => handleSelectChange("paymentMethod", val)}>
-                          <SelectTrigger className="h-11"><SelectValue /></SelectTrigger>
+                        <label className="text-sm font-medium text-slate-700">
+                          Metode Pembayaran
+                        </label>
+                        <Select
+                          value={formData.paymentMethod}
+                          onValueChange={val =>
+                            handleSelectChange("paymentMethod", val)
+                          }
+                        >
+                          <SelectTrigger className="h-11">
+                            <SelectValue />
+                          </SelectTrigger>
                           <SelectContent>
-                            <SelectItem value="MIDTRANS">Otomatis (QRIS/VA/Gopay)</SelectItem>
-                            <SelectItem value="TRANSFER_BANK">Transfer Bank Manual</SelectItem>
+                            <SelectItem value="MIDTRANS">
+                              Otomatis (QRIS/VA/Gopay)
+                            </SelectItem>
+                            <SelectItem value="TRANSFER_BANK">
+                              Transfer Bank Manual
+                            </SelectItem>
                           </SelectContent>
                         </Select>
                       </div>
                     </div>
                     {formData.paymentMethod === "TRANSFER_BANK" && (
                       <div className="space-y-2">
-                        <label className="text-sm font-medium text-slate-700">Pilih Bank</label>
-                        <Select value={formData.paymentBank} onValueChange={(val) => handleSelectChange("paymentBank", val)}>
-                          <SelectTrigger className="h-11"><SelectValue /></SelectTrigger>
+                        <label className="text-sm font-medium text-slate-700">
+                          Pilih Bank
+                        </label>
+                        <Select
+                          value={formData.paymentBank}
+                          onValueChange={val =>
+                            handleSelectChange("paymentBank", val)
+                          }
+                        >
+                          <SelectTrigger className="h-11">
+                            <SelectValue />
+                          </SelectTrigger>
                           <SelectContent>
-                            {BANKS.map(b => <SelectItem key={b.id} value={b.id}>{b.name}</SelectItem>)}
+                            {BANKS.map(b => (
+                              <SelectItem key={b.id} value={b.id}>
+                                {b.name}
+                              </SelectItem>
+                            ))}
                           </SelectContent>
                         </Select>
                       </div>
                     )}
-                    <Textarea name="notes" value={formData.notes} onChange={handleInputChange} placeholder="Catatan khusus (Opsional)" rows={2} />
+                    <Textarea
+                      name="notes"
+                      value={formData.notes}
+                      onChange={handleInputChange}
+                      placeholder="Catatan khusus (Opsional)"
+                      rows={2}
+                    />
                   </CardContent>
                 </Card>
               </form>
@@ -287,38 +452,74 @@ export default function Checkout() {
 
             <div>
               <Card className="sticky top-20 border-slate-200 shadow-md">
-                <CardHeader className="bg-slate-50 border-b border-slate-100 rounded-t-lg"><CardTitle className="text-xl">Ringkasan Pesanan</CardTitle></CardHeader>
+                <CardHeader className="bg-slate-50 border-b border-slate-100 rounded-t-lg">
+                  <CardTitle className="text-xl">Ringkasan Pesanan</CardTitle>
+                </CardHeader>
                 <CardContent className="space-y-4 pt-6">
                   <div className="space-y-3 border-b border-dashed pb-4">
                     {cartItems.map(item => (
-                      <div key={item.id} className="flex justify-between text-sm">
-                        <span className="text-slate-600">{item.productName} <span className="text-slate-400">x{item.quantity}</span></span>
-                        <span className="font-medium text-slate-800">Rp{(item.price * item.quantity).toLocaleString()}</span>
+                      <div
+                        key={item.id || item.localId}
+                        className="flex justify-between text-sm"
+                      >
+                        <span className="text-slate-600">
+                          {item.productName}{" "}
+                          <span className="text-slate-400">
+                            x{item.quantity}
+                          </span>
+                        </span>
+                        <span className="font-medium text-slate-800">
+                          Rp{(item.price * item.quantity).toLocaleString()}
+                        </span>
                       </div>
                     ))}
                   </div>
                   <div className="space-y-3">
-                    <div className="flex justify-between text-sm"><span className="text-slate-500">Subtotal</span><span className="font-medium">Rp{subtotal.toLocaleString()}</span></div>
+                    <div className="flex justify-between text-sm">
+                      <span className="text-slate-500">Subtotal</span>
+                      <span className="font-medium">
+                        Rp{subtotal.toLocaleString()}
+                      </span>
+                    </div>
                     <div className="flex justify-between text-sm">
                       <span className="text-slate-500 flex items-center gap-1">
                         Ongkir ({formData.shippingCourier.toUpperCase()})
-                        {isCostLoading && <Loader2 className="w-3 h-3 animate-spin text-red-600" />}
+                        {isCostLoading && (
+                          <Loader2 className="w-3 h-3 animate-spin text-red-600" />
+                        )}
                       </span>
                       <span className="font-medium text-slate-800">
-                        {formData.shippingProvinceId ? `Rp${shippingCost.toLocaleString()}` : "Pilih Provinsi"}
+                        {formData.shippingProvinceId
+                          ? `Rp${shippingCost.toLocaleString()}`
+                          : "Pilih Provinsi"}
                       </span>
                     </div>
-                    {costData?.etd && <p className="text-[10px] text-right text-slate-400 italic">Estimasi sampai: {costData.etd} hari</p>}
+                    {costData?.etd && (
+                      <p className="text-[10px] text-right text-slate-400 italic">
+                        Estimasi sampai: {costData.etd} hari
+                      </p>
+                    )}
                     <div className="flex justify-between font-bold text-lg border-t border-slate-200 pt-4">
                       <span className="text-slate-800">Total</span>
-                      <span className="text-red-600 text-xl font-bold">Rp{total.toLocaleString()}</span>
+                      <span className="text-red-600 text-xl font-bold">
+                        Rp{total.toLocaleString()}
+                      </span>
                     </div>
                   </div>
-                  <Button type="submit" form="checkout-form" disabled={isLoading || isCostLoading} className="w-full bg-red-600 hover:bg-red-700 text-white font-bold h-12 mt-4 shadow-lg shadow-red-100 transition-all active:scale-95">
-                    {isLoading ? <Loader2 className="animate-spin mr-2" /> : null}
+                  <Button
+                    type="submit"
+                    form="checkout-form"
+                    disabled={isLoading || isCostLoading}
+                    className="w-full bg-red-600 hover:bg-red-700 text-white font-bold h-12 mt-4 shadow-lg shadow-red-100 transition-all active:scale-95"
+                  >
+                    {isLoading ? (
+                      <Loader2 className="animate-spin mr-2" />
+                    ) : null}
                     {isLoading ? "Memproses..." : "Bayar Sekarang"}
                   </Button>
-                  <p className="text-[10px] text-center text-slate-400 mt-4 italic">Sistem Ongkir Berbasis Provinsi - Akurat & Unlimited</p>
+                  <p className="text-[10px] text-center text-slate-400 mt-4 italic">
+                    Sistem Ongkir Berbasis Provinsi - Akurat & Unlimited
+                  </p>
                 </CardContent>
               </Card>
             </div>

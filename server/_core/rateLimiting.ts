@@ -1,7 +1,4 @@
-/**
- * Rate Limiting Middleware
- * Implementasi rate limiting untuk proteksi terhadap brute force attacks dan DoS
- */
+import { Request, Response, NextFunction } from "express";
 
 export interface RateLimitConfig {
   windowMs: number; // Time window dalam milliseconds
@@ -32,7 +29,7 @@ setInterval(() => {
  * @returns Express middleware
  */
 export function createRateLimiter(config: RateLimitConfig) {
-  return (req: any, res: any, next: any) => {
+  return (req: Request, res: Response, next: NextFunction) => {
     // Gunakan IP address sebagai identifier (bisa disesuaikan)
     const key = `${req.ip || req.connection.remoteAddress}:${req.path}`;
 
@@ -94,12 +91,10 @@ export const RATE_LIMIT_CONFIGS = {
 /**
  * Get client IP address (accounting for proxies)
  */
-export function getClientIp(req: any): string {
+export function getClientIp(req: Request): string {
   return (
     req.ip ||
-    req.connection?.remoteAddress ||
     req.socket?.remoteAddress ||
-    req.connection?.socket?.remoteAddress ||
     "unknown"
   );
 }
@@ -131,14 +126,20 @@ export function blockIp(ip: string, durationMs: number): void {
 /**
  * Middleware to check if IP is blocked
  */
-export function checkBlockedIp(req: any, res: any, next: any) {
+export function checkBlockedIp(
+  req: Request,
+  res: Response,
+  next: NextFunction
+) {
   const ip = getClientIp(req);
 
   if (isIpBlocked(ip)) {
     return res.status(403).json({
-      error: "Your IP has been temporarily blocked due to too many failed attempts. Please try again later.",
+      error:
+        "Your IP has been temporarily blocked due to too many failed attempts. Please try again later.",
     });
   }
 
   next();
 }
+

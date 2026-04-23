@@ -19,7 +19,6 @@ export default function Register() {
   const [phone, setPhone] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [success, setSuccess] = useState(false);
 
   const registerMutation = trpc.auth.register.useMutation();
 
@@ -53,11 +52,10 @@ export default function Register() {
         name: name || undefined,
         phone: phone || undefined,
       });
-      setSuccess(true);
       await refresh();
       navigate("/dashboard");
-    } catch (err: any) {
-      setError(err.message || "Pendaftaran gagal. Silakan coba lagi.");
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : "Pendaftaran gagal. Silakan coba lagi.");
     } finally {
       setIsSubmitting(false);
     }
@@ -108,7 +106,7 @@ export default function Register() {
                   type="text"
                   placeholder="Masukkan nama anda"
                   value={name}
-                  onChange={(e) => setName(e.target.value)}
+                  onChange={e => setName(e.target.value)}
                   disabled={isSubmitting}
                 />
               </div>
@@ -120,7 +118,7 @@ export default function Register() {
                   type="email"
                   placeholder="nama@example.com"
                   value={email}
-                  onChange={(e) => setEmail(e.target.value)}
+                  onChange={e => setEmail(e.target.value)}
                   required
                   disabled={isSubmitting}
                 />
@@ -133,7 +131,7 @@ export default function Register() {
                   type="tel"
                   placeholder="+62812345678"
                   value={phone}
-                  onChange={(e) => setPhone(e.target.value)}
+                  onChange={e => setPhone(e.target.value)}
                   disabled={isSubmitting}
                 />
               </div>
@@ -145,7 +143,7 @@ export default function Register() {
                   type="password"
                   placeholder="Minimal 6 karakter"
                   value={password}
-                  onChange={(e) => setPassword(e.target.value)}
+                  onChange={e => setPassword(e.target.value)}
                   required
                   disabled={isSubmitting}
                 />
@@ -158,7 +156,7 @@ export default function Register() {
                   type="password"
                   placeholder="Ketik ulang password"
                   value={confirmPassword}
-                  onChange={(e) => setConfirmPassword(e.target.value)}
+                  onChange={e => setConfirmPassword(e.target.value)}
                   required
                   disabled={isSubmitting}
                 />
@@ -196,7 +194,9 @@ export default function Register() {
 
             {/* Benefits */}
             <div className="space-y-3 bg-green-50 border border-green-200 rounded-lg p-4">
-              <p className="font-semibold text-green-900 text-sm">Keuntungan Menjadi Member:</p>
+              <p className="font-semibold text-green-900 text-sm">
+                Keuntungan Menjadi Member:
+              </p>
               <ul className="text-sm text-green-800 space-y-1">
                 <li>✓ Akses eksklusif ke produk terbaru</li>
                 <li>✓ Diskon khusus member</li>
@@ -207,14 +207,22 @@ export default function Register() {
 
             {/* Login Link */}
             <a href="/login">
-              <Button variant="outline" size="lg" className="w-full border-2 border-red-600 text-red-600 hover:bg-red-50 font-semibold h-12">
+              <Button
+                variant="outline"
+                size="lg"
+                className="w-full border-2 border-red-600 text-red-600 hover:bg-red-50 font-semibold h-12"
+              >
                 Sudah Punya Akun? Masuk
               </Button>
             </a>
 
             {/* Back to Home */}
             <a href="/">
-              <Button variant="ghost" size="sm" className="w-full text-gray-600 hover:text-gray-900">
+              <Button
+                variant="ghost"
+                size="sm"
+                className="w-full text-gray-600 hover:text-gray-900"
+              >
                 Kembali ke Beranda
               </Button>
             </a>
@@ -233,3 +241,5 @@ export default function Register() {
     </div>
   );
 }
+
+

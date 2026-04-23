@@ -1,27 +1,27 @@
 /**
  * SQL Injection Protection & Database Security
- * 
+ *
  * This project uses Drizzle ORM which provides protection against SQL injection.
  * Key security practices implemented:
- * 
+ *
  * 1. PARAMETERIZED QUERIES (Prepared Statements)
  *    - Drizzle uses parameterized queries by default
  *    - Never concatenate user input directly into queries
  *    - Always use query builders and parameter binding
- * 
+ *
  * 2. EXAMPLE VULNERABLE (DON'T DO THIS):
  *    const query = `SELECT * FROM users WHERE email = '${userEmail}'`; // VULNERABLE
- * 
+ *
  * 3. EXAMPLE SAFE (CORRECT WAY):
- *    const user = await db.query.users.findFirst({ 
+ *    const user = await db.query.users.findFirst({
  *      where: eq(users.email, userEmail)
  *    }); // SAFE - Drizzle handles parameterization
- * 
+ *
  * 4. VALIDATION & SANITIZATION
  *    - Input validation with Zod schemas
  *    - Type-safe database operations
  *    - Whitelist allowed values with enums
- * 
+ *
  * 5. LEAST PRIVILEGE
  *    - Database user has minimal required permissions
  *    - Use role-based access control (RBAC)
@@ -46,13 +46,16 @@ export const safeQueryExample = `
  */
 export const SQL_INJECTION_PREVENTION = {
   // 1. Always use the ORM's query builders
-  use_orm: "✓ Use Drizzle query builders, never raw SQL with string interpolation",
+  use_orm:
+    "✓ Use Drizzle query builders, never raw SQL with string interpolation",
 
   // 2. Validate input types
-  validate_types: "✓ Use Zod schemas to validate input types before database queries",
+  validate_types:
+    "✓ Use Zod schemas to validate input types before database queries",
 
   // 3. Use enums for restricted values
-  use_enums: "✓ Use TypeScript enums or Zod enums for status fields, roles, etc.",
+  use_enums:
+    "✓ Use TypeScript enums or Zod enums for status fields, roles, etc.",
 
   // 4. Implement access control
   access_control: "✓ Check user permissions before executing queries",
@@ -136,27 +139,35 @@ export const SAFE_DRIZZLE_EXAMPLES = {
  * Validation schemas with protection against SQL injection
  */
 export const secureDatabaseValidation = {
-  email: z
-    .string()
-    .email()
-    .max(255),
+  email: z.string().email().max(255),
 
-  userId: z
-    .number()
-    .int()
-    .positive(),
+  userId: z.number().int().positive(),
 
-  status: z
-    .enum(["PENDING_PAYMENT", "PROCESSING", "SHIPPED", "COMPLETED", "CANCELLED"]),
+  status: z.enum([
+    "PENDING_PAYMENT",
+    "PROCESSING",
+    "SHIPPED",
+    "COMPLETED",
+    "CANCELLED",
+  ]),
 
   // Never allow raw SQL strings from user
   query: z
     .string()
     .max(255)
-    .refine((val) => !val.includes(";"), "Query cannot contain semicolons")
-    .refine((val) => !val.toLowerCase().includes("drop"), "Query cannot contain DROP")
-    .refine((val) => !val.toLowerCase().includes("delete"), "Query cannot contain DELETE")
-    .refine((val) => !val.toLowerCase().includes("update"), "Query cannot contain UPDATE"),
+    .refine(val => !val.includes(";"), "Query cannot contain semicolons")
+    .refine(
+      val => !val.toLowerCase().includes("drop"),
+      "Query cannot contain DROP"
+    )
+    .refine(
+      val => !val.toLowerCase().includes("delete"),
+      "Query cannot contain DELETE"
+    )
+    .refine(
+      val => !val.toLowerCase().includes("update"),
+      "Query cannot contain UPDATE"
+    ),
 };
 
 /**
@@ -168,15 +179,3 @@ export const DATABASE_SECURITY_HEADERS = {
   "Strict-Transport-Security": "max-age=31536000", // HTTPS only
   "Content-Security-Policy": "default-src 'self'", // Restrict sources
 };
-
-console.log(`
-✓ SQL Injection Protection Implemented
-  - Drizzle ORM parameterized queries
-  - Zod schema validation
-  - Access control checks
-  - Type-safe database operations
-  
-ℹ For more info:
-  - Drizzle Docs: https://orm.drizzle.team/
-  - OWASP SQL Injection: https://owasp.org/www-community/attacks/SQL_Injection
-`);

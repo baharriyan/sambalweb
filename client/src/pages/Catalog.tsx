@@ -5,11 +5,19 @@ import Footer from "@/components/Footer";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { ShoppingCart, Plus, Minus, Search, Loader2 } from "lucide-react";
 import { toast } from "sonner";
-import { trpc } from "@/lib/trpc";
-import { useCart } from "@/contexts/CartContext";
+import { trpc, RouterOutputs } from "@/lib/trpc";
+import { useCart } from "@/contexts/CartContextHook";
+
+type Product = RouterOutputs["products"]["list"][number];
 
 export default function Catalog() {
   const [searchTerm, setSearchTerm] = useState("");
@@ -17,19 +25,30 @@ export default function Catalog() {
   const [quantities, setQuantities] = useState<Record<number, number>>({});
   const [addingToCart, setAddingToCart] = useState<Record<number, boolean>>({});
 
-  const { data: products, isLoading, error } = trpc.products.list.useQuery({ isActive: true });
+  const {
+    data: products,
+    isLoading,
+    error,
+  } = trpc.products.list.useQuery({ isActive: true });
   const { addItem } = useCart();
 
   const renderSpiceLevel = (level: number) => "🌶️".repeat(Math.min(level, 5));
 
-  const handleQuantityChange = (productId: number, delta: number, maxStock: number) => {
-    setQuantities((prev) => ({
+  const handleQuantityChange = (
+    productId: number,
+    delta: number,
+    maxStock: number
+  ) => {
+    setQuantities(prev => ({
       ...prev,
-      [productId]: Math.max(0, Math.min(maxStock, (prev[productId] || 0) + delta)),
+      [productId]: Math.max(
+        0,
+        Math.min(maxStock, (prev[productId] || 0) + delta)
+      ),
     }));
   };
 
-  const handleAddToCart = async (product: any) => {
+  const handleAddToCart = async (product: Product) => {
     const quantity = quantities[product.id] || 1;
     if (quantity <= 0) {
       toast.error("Pilih jumlah produk terlebih dahulu");
@@ -41,30 +60,36 @@ export default function Catalog() {
       return;
     }
 
-    setAddingToCart((prev) => ({ ...prev, [product.id]: true }));
+    setAddingToCart(prev => ({ ...prev, [product.id]: true }));
 
     try {
-      await addItem(product.id, product.name, product.price, product.imageUrl || "🌶️", quantity);
+      await addItem(
+        product.id,
+        product.name,
+        product.price,
+        product.imageUrl || "🌶️",
+        quantity
+      );
       toast.success(`${product.name} ditambahkan ke keranjang!`);
-      setQuantities((prev) => ({
+      setQuantities(prev => ({
         ...prev,
         [product.id]: 0,
       }));
-    } catch (err) {
+    } catch {
       toast.error("Gagal menambahkan ke keranjang");
-      console.error(err);
     } finally {
-      setAddingToCart((prev) => ({ ...prev, [product.id]: false }));
+      setAddingToCart(prev => ({ ...prev, [product.id]: false }));
     }
   };
 
   const filteredProducts = useMemo(() => {
     if (!products) return [];
-    
+
     return products
-      .filter((product) =>
-        product.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        product.description?.toLowerCase().includes(searchTerm.toLowerCase())
+      .filter(
+        product =>
+          product.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          product.description?.toLowerCase().includes(searchTerm.toLowerCase())
       )
       .sort((a, b) => {
         if (sortBy === "name") return a.name.localeCompare(b.name);
@@ -82,7 +107,9 @@ export default function Catalog() {
         <div className="max-w-7xl mx-auto">
           {/* Header */}
           <div className="mb-12">
-            <h1 className="text-4xl font-bold text-gray-900 mb-4">Katalog Produk</h1>
+            <h1 className="text-4xl font-bold text-gray-900 mb-4">
+              Katalog Produk
+            </h1>
             <p className="text-lg text-gray-600">
               Temukan semua varian sambal premium kami
             </p>
@@ -97,7 +124,7 @@ export default function Catalog() {
                 <Input
                   placeholder="Cari produk..."
                   value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
+                  onChange={e => setSearchTerm(e.target.value)}
                   className="pl-10"
                   disabled={isLoading}
                 />
@@ -119,7 +146,11 @@ export default function Catalog() {
               {/* Results Count */}
               <div className="flex items-center justify-end">
                 <p className="text-sm text-gray-600">
-                  Menampilkan <span className="font-semibold">{filteredProducts.length}</span> produk
+                  Menampilkan{" "}
+                  <span className="font-semibold">
+                    {filteredProducts.length}
+                  </span>{" "}
+                  produk
                 </p>
               </div>
             </div>
@@ -135,14 +166,16 @@ export default function Catalog() {
           {/* Error State */}
           {error && !isLoading && (
             <div className="bg-red-50 border border-red-200 rounded-lg p-6 text-center">
-              <p className="text-red-600">Terjadi kesalahan saat memuat produk</p>
+              <p className="text-red-600">
+                Terjadi kesalahan saat memuat produk
+              </p>
             </div>
           )}
 
           {/* Products Grid */}
           {!isLoading && !error && filteredProducts.length > 0 && (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-              {filteredProducts.map((product) => (
+              {filteredProducts.map(product => (
                 <Card
                   key={product.id}
                   className="bg-white border border-gray-200 rounded-xl overflow-hidden hover:shadow-xl transition-all duration-300 hover:scale-105 flex flex-col"
@@ -150,7 +183,12 @@ export default function Catalog() {
                   {/* Product Image */}
                   <div className="h-48 bg-gradient-to-br from-red-100 to-orange-100 flex items-center justify-center text-6xl overflow-hidden">
                     {product.imageUrl ? (
-                      <img src={product.imageUrl} alt={product.name} className="w-full h-full object-cover" loading="lazy" />
+                      <img
+                        src={product.imageUrl}
+                        alt={product.name}
+                        className="w-full h-full object-cover"
+                        loading="lazy"
+                      />
                     ) : (
                       "🌶️"
                     )}
@@ -171,7 +209,9 @@ export default function Catalog() {
                     {/* Spice Level */}
                     <div className="mb-4">
                       <p className="text-sm text-gray-500 mb-1">Level Pedas</p>
-                      <p className="text-lg">{renderSpiceLevel(product.spiceLevel)}</p>
+                      <p className="text-lg">
+                        {renderSpiceLevel(product.spiceLevel)}
+                      </p>
                     </div>
 
                     {/* Price and Stock */}
@@ -180,14 +220,21 @@ export default function Catalog() {
                         Rp{product.price.toLocaleString("id-ID")}
                       </p>
                       <p className="text-sm text-gray-500">
-                        Stok: <span className={`font-semibold ${product.stock > 0 ? "text-gray-900" : "text-red-600"}`}>{product.stock}</span>
+                        Stok:{" "}
+                        <span
+                          className={`font-semibold ${product.stock > 0 ? "text-gray-900" : "text-red-600"}`}
+                        >
+                          {product.stock}
+                        </span>
                       </p>
                     </div>
 
                     {/* Quantity Selector */}
                     <div className="flex items-center justify-between mb-4 bg-gray-100 rounded-lg p-2">
                       <button
-                        onClick={() => handleQuantityChange(product.id, -1, product.stock)}
+                        onClick={() =>
+                          handleQuantityChange(product.id, -1, product.stock)
+                        }
                         className="p-1 hover:bg-gray-200 rounded transition-colors disabled:opacity-50"
                         disabled={product.stock === 0}
                       >
@@ -197,9 +244,14 @@ export default function Catalog() {
                         {quantities[product.id] || 0}
                       </span>
                       <button
-                        onClick={() => handleQuantityChange(product.id, 1, product.stock)}
+                        onClick={() =>
+                          handleQuantityChange(product.id, 1, product.stock)
+                        }
                         className="p-1 hover:bg-gray-200 rounded transition-colors disabled:opacity-50"
-                        disabled={product.stock <= (quantities[product.id] || 0) || product.stock === 0}
+                        disabled={
+                          product.stock <= (quantities[product.id] || 0) ||
+                          product.stock === 0
+                        }
                       >
                         <Plus className="w-4 h-4 text-gray-700" />
                       </button>
@@ -232,22 +284,27 @@ export default function Catalog() {
           )}
 
           {/* Empty State */}
-          {!isLoading && !error && filteredProducts.length === 0 && products && products.length > 0 && (
-            <div className="text-center py-12">
-              <p className="text-gray-600 mb-4">Tidak ada produk yang ditemukan dengan pencarian Anda</p>
-              <Button
-                onClick={() => setSearchTerm("")}
-                variant="outline"
-              >
-                Hapus Filter
-              </Button>
-            </div>
-          )}
+          {!isLoading &&
+            !error &&
+            filteredProducts.length === 0 &&
+            products &&
+            products.length > 0 && (
+              <div className="text-center py-12">
+                <p className="text-gray-600 mb-4">
+                  Tidak ada produk yang ditemukan dengan pencarian Anda
+                </p>
+                <Button onClick={() => setSearchTerm("")} variant="outline">
+                  Hapus Filter
+                </Button>
+              </div>
+            )}
 
           {/* No Products Available */}
           {!isLoading && !error && products && products.length === 0 && (
             <div className="text-center py-12">
-              <p className="text-gray-600 mb-4">Tidak ada produk yang tersedia saat ini</p>
+              <p className="text-gray-600 mb-4">
+                Tidak ada produk yang tersedia saat ini
+              </p>
             </div>
           )}
         </div>

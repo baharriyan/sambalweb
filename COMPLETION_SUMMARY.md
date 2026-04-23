@@ -9,7 +9,8 @@ Dokumen ini merangkum semua fitur yang telah diselesaikan dalam sesi ini.
 ### Backend Files
 
 #### Security & Middleware
-- **[server/_core/middleware.ts](server/_core/middleware.ts)** ✨ BARU
+
+- **[server/\_core/middleware.ts](server/_core/middleware.ts)** ✨ BARU
   - Security headers middleware
   - CSRF token generation & validation
   - Rate limiting (login & API)
@@ -17,12 +18,13 @@ Dokumen ini merangkum semua fitur yang telah diselesaikan dalam sesi ini.
   - Input sanitization
   - Trust proxy configuration
 
-- **[server/_core/index.ts](server/_core/index.ts)** 📝 UPDATED
+- **[server/\_core/index.ts](server/_core/index.ts)** 📝 UPDATED
   - Integrated semua middleware ke Express
 
 ### Frontend Files
 
 #### Context Management
+
 - **[client/src/contexts/CartContext.tsx](client/src/contexts/CartContext.tsx)** ✨ BARU
   - Cart state management
   - Support guest (localStorage) & logged-in users (database)
@@ -30,6 +32,7 @@ Dokumen ini merangkum semua fitur yang telah diselesaikan dalam sesi ini.
   - Cart operations (add, update, remove, clear)
 
 #### Components
+
 - **[client/src/components/MiniCartDrawer.tsx](client/src/components/MiniCartDrawer.tsx)** ✨ BARU
   - Sidebar drawer untuk cart display
   - Quantity controls
@@ -42,6 +45,7 @@ Dokumen ini merangkum semua fitur yang telah diselesaikan dalam sesi ini.
   - CartContext integration
 
 #### Pages
+
 - **[client/src/pages/OrderConfirmation.tsx](client/src/pages/OrderConfirmation.tsx)** ✨ BARU
   - Post-checkout confirmation
   - Payment instructions (Bank Transfer & QRIS)
@@ -56,11 +60,13 @@ Dokumen ini merangkum semua fitur yang telah diselesaikan dalam sesi ini.
   - Form validation
 
 #### Root App
+
 - **[client/src/App.tsx](client/src/App.tsx)** 📝 UPDATED
   - CartProvider wrapper
   - OrderConfirmation route
 
 #### Validation & Utilities
+
 - **[client/src/lib/validation.ts](client/src/lib/validation.ts)** ✨ BARU
   - Comprehensive Zod schemas untuk semua forms
   - Helper functions untuk validation
@@ -130,6 +136,7 @@ orderItems             - Line items dalam order
 ## 🔒 SECURITY FEATURES
 
 ### Implemented
+
 - ✅ Security Headers (CSP, X-Frame-Options, HSTS, dll)
 - ✅ CSRF Token Protection
 - ✅ Rate Limiting (Login: 5 attempts/15min, API: 60/minute)
@@ -139,6 +146,7 @@ orderItems             - Line items dalam order
 - ✅ Session management dengan cookies
 
 ### Available APIs
+
 - ✅ Rate limiter untuk custom endpoints
 - ✅ CSRF token middleware untuk state-changing requests
 - ✅ Security headers configurable
@@ -148,6 +156,7 @@ orderItems             - Line items dalam order
 ## 🛒 E-COMMERCE FLOW
 
 ### Guest Checkout Flow
+
 ```
 1. Browse products → Add to cart (localStorage)
 2. Cart badge updates
@@ -159,6 +168,7 @@ orderItems             - Line items dalam order
 ```
 
 ### User Checkout Flow
+
 ```
 1. Login → Browse products → Add to cart (database)
 2. Cart syncs across pages
@@ -174,6 +184,7 @@ orderItems             - Line items dalam order
 ## 📱 RESPONSIVE DESIGN
 
 Semua komponen responsive untuk:
+
 - Mobile (< 768px)
 - Tablet (768px - 1024px)
 - Desktop (> 1024px)
@@ -183,6 +194,7 @@ Semua komponen responsive untuk:
 ## 🎯 API ENDPOINTS (tRPC Routes)
 
 ### Public Routes
+
 - `auth.me` - Get current user
 - `auth.logout` - Clear session
 - `products.list` - List products with filter
@@ -190,6 +202,7 @@ Semua komponen responsive untuk:
 - `orders.create` - Create order (guest or user)
 
 ### Protected User Routes
+
 - `cart.*` - Cart operations
 - `addresses.*` - Address management
 - `users.getProfile` - Get user profile
@@ -197,6 +210,7 @@ Semua komponen responsive untuk:
 - `orders.getUserOrders` - User's orders
 
 ### Admin Routes
+
 - `products.*` - Full CRUD
 - `orders.*` - Order management & status update
 - `users.*` - User management
@@ -207,6 +221,7 @@ Semua komponen responsive untuk:
 ## 🚀 CARA MENJALANKAN PROJECT
 
 ### Prerequisites
+
 - Node.js 18+
 - MySQL/MariaDB running
 - npm atau pnpm
@@ -214,15 +229,17 @@ Semua komponen responsive untuk:
 ### Setup Steps
 
 1. **Install Dependencies**
+
    ```bash
    pnpm install
    ```
 
 2. **Setup Environment Variables**
+
    ```bash
    # Copy .env.example ke .env
    cp .env.example .env
-   
+
    # Edit .env dan set:
    DATABASE_URL=mysql://user:password@localhost:3306/sambal_ecommerce
    NODE_ENV=development
@@ -231,16 +248,18 @@ Semua komponen responsive untuk:
    ```
 
 3. **Setup Database**
+
    ```bash
    # Generate migrations
    pnpm run db:push
-   
+
    # atau run manual migration
    drizzle-kit generate
    drizzle-kit migrate
    ```
 
 4. **Seed Database (Optional)**
+
    ```bash
    # Edit seed.mjs untuk menambah sample data
    node seed.mjs
@@ -253,6 +272,7 @@ Semua komponen responsive untuk:
    ```
 
 ### Build untuk Production
+
 ```bash
 pnpm run build
 pnpm run start
@@ -263,6 +283,7 @@ pnpm run start
 ## ✨ FITUR-FITUR YANG SUDAH LENGKAP
 
 ### Landing Page
+
 - ✅ Navbar (sticky, responsive, cart badge)
 - ✅ Hero section
 - ✅ Product grid (4 sambal variants)
@@ -272,12 +293,14 @@ pnpm run start
 - ✅ Footer
 
 ### Product Pages
+
 - ✅ Catalog dengan search/filter
 - ✅ Product detail dengan image, description, price
 - ✅ Stock status
 - ✅ Spice level indicator
 
 ### Shopping Cart
+
 - ✅ Mini cart drawer (sidebar)
 - ✅ Add to cart (dengan quantity selector)
 - ✅ Update quantity
@@ -288,6 +311,7 @@ pnpm run start
 - ✅ User cart in database
 
 ### Checkout
+
 - ✅ Customer info form
 - ✅ Shipping address form
 - ✅ Courier selection (JNE, SiCepat, J&T)
@@ -297,6 +321,7 @@ pnpm run start
 - ✅ Form validation
 
 ### Order Management
+
 - ✅ Order confirmation page
 - ✅ Order number display & copy
 - ✅ Payment instructions (Bank Transfer)
@@ -305,24 +330,28 @@ pnpm run start
 - ✅ Contact info display
 
 ### User Dashboard
+
 - ✅ Profile display
 - ✅ Order history
 - ✅ User menu (profile, logout)
 - ✅ Role indicator
 
 ### Admin Dashboard
+
 - ✅ Dashboard layout dengan sidebar
 - ✅ Statistics (orders, revenue, stock)
 - ✅ Admin-only access control
 - ✅ Skeleton pages untuk: Products, Orders, Users, Reports
 
 ### Authentication
+
 - ✅ OAuth login flow
 - ✅ Session management
 - ✅ Role-based access (user/admin)
 - ✅ Logout functionality
 
 ### Security
+
 - ✅ Security headers
 - ✅ CSRF protection
 - ✅ Rate limiting
@@ -335,6 +364,7 @@ pnpm run start
 ## ⏳ FITUR YANG MASIH TODO
 
 ### UI/UX Improvements
+
 - [ ] Address Management UI (add/edit/delete di dashboard)
 - [ ] Password Change Form di dashboard
 - [ ] Order Again functionality
@@ -343,6 +373,7 @@ pnpm run start
 - [ ] Product image lightbox/gallery
 
 ### Admin Features
+
 - [ ] Product Management page (full CRUD UI)
 - [ ] Order Management page (list, detail, status update)
 - [ ] User Management page (list, block/unblock)
@@ -350,12 +381,14 @@ pnpm run start
 - [ ] Low stock alerts
 
 ### Communication
+
 - [ ] Owner notifications (email on new orders)
 - [ ] WhatsApp integration
 - [ ] Order status notifications to customer
 - [ ] Email confirmations
 
 ### Advanced Features
+
 - [ ] AI image generation untuk products
 - [ ] CSV/Excel export
 - [ ] Analytics dashboard
@@ -364,6 +397,7 @@ pnpm run start
 - [ ] Product reviews & ratings
 
 ### Testing & Optimization
+
 - [ ] Expand unit tests
 - [ ] E2E testing
 - [ ] Performance optimization
@@ -419,11 +453,13 @@ AWS_S3_BUCKET=your_bucket
 ## 🧪 TESTING
 
 ### Run Tests
+
 ```bash
 pnpm test
 ```
 
 ### Existing Test Files
+
 - `server/auth.logout.test.ts` - Auth tests
 - `server/ecommerce.test.ts` - E-commerce tests
 
@@ -445,6 +481,7 @@ pnpm test
 ## 🎓 CODE STRUCTURE & BEST PRACTICES
 
 ### Frontend
+
 - ✅ Component-based architecture
 - ✅ Context API untuk state management
 - ✅ Zod untuk type-safe validation
@@ -454,6 +491,7 @@ pnpm test
 - ✅ Loading states & skeletons
 
 ### Backend
+
 - ✅ tRPC untuk type-safe APIs
 - ✅ Drizzle ORM untuk database
 - ✅ Middleware pattern untuk cross-cutting concerns
@@ -463,6 +501,7 @@ pnpm test
 - ✅ Rate limiting & CSRF protection
 
 ### Database
+
 - ✅ Proper foreign keys & relationships
 - ✅ Timestamps (createdAt, updatedAt)
 - ✅ Indexes untuk performance
@@ -492,19 +531,23 @@ pnpm test
 ### Common Issues
 
 **Cart tidak simpan untuk guest**
+
 - Check browser localStorage permissions
 - Verify cookie policy
 
 **Order creation fails**
+
 - Check database connection
 - Verify all required fields terisi
 - Check console untuk error details
 
 **Admin routes tidak accessible**
+
 - Verify `OWNER_OPEN_ID` di env match dengan user openId
 - Check user role di database (harus "admin")
 
 **Middleware errors**
+
 - Check CSRF token di request headers
 - Verify rate limit tidak exceeded
 - Check security headers tidak conflict dengan proxies

@@ -10,9 +10,7 @@ function getForgeConfig() {
   const forgeKey = ENV.forgeApiKey;
 
   if (!forgeUrl || !forgeKey) {
-    throw new Error(
-      "Storage config missing: set BUILT_IN_FORGE_API_URL and BUILT_IN_FORGE_API_KEY",
-    );
+    return null;
   }
 
   return { forgeUrl: forgeUrl.replace(/\/+$/, ""), forgeKey };
@@ -32,65 +30,77 @@ function appendHashSuffix(relKey: string): string {
 export async function storagePut(
   relKey: string,
   data: Buffer | Uint8Array | string,
-  contentType = "application/octet-stream",
+  contentType = "application/octet-stream"
 ): Promise<{ key: string; url: string }> {
   const key = appendHashSuffix(normalizeKey(relKey));
-  
+
   // Try Forge Storage first
   try {
-    const { forgeUrl, forgeKey } = getForgeConfig();
-    
-    // 1. Get presigned PUT URL from Forge
-    const presignUrl = new URL("v1/storage/presign/put", forgeUrl + "/");
-    presignUrl.searchParams.set("path", key);
+    const config = getForgeConfig();
 
-    const presignResp = await fetch(presignUrl, {
-      headers: { Authorization: `Bearer ${forgeKey}` },
-    });
+    if (config) {
+      const { forgeUrl, forgeKey } = config;
+      // 1. Get presigned PUT URL from Forge
+      const presignUrl = new URL("v1/storage/presign/put", forgeUrl + "/");
+      presignUrl.searchParams.set("path", key);
 
-    if (presignResp.ok) {
-      const { url: s3Url } = (await presignResp.json()) as { url: string };
-      if (s3Url) {
-        const blob = typeof data === "string" 
-          ? new Blob([data], { type: contentType }) 
-          : new Blob([data as any], { type: contentType });
+      const presignResp = await fetch(presignUrl, {
+        headers: { Authorization: `Bearer ${forgeKey}` },
+      });
 
-        const uploadResp = await fetch(s3Url, {
-          method: "PUT",
-          headers: { "Content-Type": contentType },
-          body: blob,
-        });
+      if (presignResp.ok) {
+        const { url: s3Url } = (await presignResp.json()) as { url: string };
+        if (s3Url) {
+          const blob =
+            typeof data === "string"
+              ? new Blob([data], { type: contentType })
+              : new Blob([data as BlobPart], { type: contentType });
 
-        if (uploadResp.ok) {
-          return { key, url: `/manus-storage/${key}` };
+          const uploadResp = await fetch(s3Url, {
+            method: "PUT",
+            headers: { "Content-Type": contentType },
+            body: blob,
+          });
+
+          if (uploadResp.ok) {
+            return { key, url: `/manus-storage/${key}` };
+          }
         }
       }
     }
-  } catch (error) {
-    console.warn("[Storage] Forge storage not available, falling back to local storage:", String(error));
+  } catch {
+    // Forge storage error, falling back to local storage
   }
 
   // Local Storage Fallback
   const fs = await import("node:fs/promises");
   const path = await import("node:path");
-  
+
   const uploadDir = path.join(process.cwd(), "client", "public", "uploads");
   const filePath = path.join(uploadDir, key);
-  
-  await fs.writeFile(filePath, data as any);
-  
+
+  await fs.writeFile(filePath, data);
+
   return { key, url: `/uploads/${key}` };
 }
 
-export async function storageGet(relKey: string): Promise<{ key: string; url: string }> {
+export async function storageGet(
+  relKey: string
+): Promise<{ key: string; url: string }> {
   const key = normalizeKey(relKey);
   return { key, url: `/manus-storage/${key}` };
 }
 
 export async function storageGetSignedUrl(relKey: string): Promise<string> {
-  const { forgeUrl, forgeKey } = getForgeConfig();
+  const config = getForgeConfig();
   const key = normalizeKey(relKey);
 
+  if (!config) {
+    // Fallback for local storage: just return the public URL
+    return `/uploads/${key}`;
+  }
+
+  const { forgeUrl, forgeKey } = config;
   const getUrl = new URL("v1/storage/presign/get", forgeUrl + "/");
   getUrl.searchParams.set("path", key);
 
@@ -106,3 +116,4 @@ export async function storageGetSignedUrl(relKey: string): Promise<string> {
   const { url } = (await resp.json()) as { url: string };
   return url;
 }
+

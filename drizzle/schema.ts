@@ -1,14 +1,12 @@
-import { 
-  int, 
-  mysqlEnum, 
-  mysqlTable, 
-  text, 
-  timestamp, 
+import {
+  int,
+  mysqlEnum,
+  mysqlTable,
+  text,
+  timestamp,
   varchar,
-  decimal,
   boolean,
-  primaryKey,
-  datetime
+  datetime,
 } from "drizzle-orm/mysql-core";
 import { relations } from "drizzle-orm";
 
@@ -114,8 +112,10 @@ export const orders = mysqlTable("orders", {
     "PROCESSING",
     "SHIPPED",
     "COMPLETED",
-    "CANCELLED"
-  ]).default("PENDING_PAYMENT").notNull(),
+    "CANCELLED",
+  ])
+    .default("PENDING_PAYMENT")
+    .notNull(),
   notes: text("notes"),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
@@ -260,3 +260,5 @@ export const siteSettings = mysqlTable("siteSettings", {
 
 export type SiteSetting = typeof siteSettings.$inferSelect;
 export type InsertSiteSetting = typeof siteSettings.$inferInsert;
+
+

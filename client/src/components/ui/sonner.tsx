@@ -1,4 +1,5 @@
-import { useTheme } from "next-themes";
+import * as React from "react";
+import { useTheme } from "@/contexts/ThemeContextHook";
 import { Toaster as Sonner, type ToasterProps } from "sonner";
 
 const Toaster = ({ ...props }: ToasterProps) => {
@@ -21,3 +22,5 @@ const Toaster = ({ ...props }: ToasterProps) => {
 };
 
 export { Toaster };
+
+

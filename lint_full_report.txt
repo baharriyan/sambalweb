@@ -1,0 +1,8 @@
+﻿
+C:\Users\riyan\Downloads\sambal-ecommerce\client\src\pages\ComponentShowcase.tsx
+  180:10  warning  'selectedFruits' is assigned a value but never used     @typescript-eslint/no-unused-vars
+  180:26  warning  'setSelectedFruits' is assigned a value but never used  @typescript-eslint/no-unused-vars
+  197:5   warning  Unexpected console statement                            no-console
+
+Γ£û 3 problems (0 errors, 3 warnings)
+

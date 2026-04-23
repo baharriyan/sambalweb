@@ -5,7 +5,8 @@ const TESTIMONIALS = [
     id: 1,
     name: "Budi Santoso",
     role: "Pecinta Masakan Pedas",
-    comment: "Sambal ini benar-benar luar biasa! Rasa yang sempurna, tidak terlalu pedas tapi cukup menggigit. Saya sudah order berkali-kali.",
+    comment:
+      "Sambal ini benar-benar luar biasa! Rasa yang sempurna, tidak terlalu pedas tapi cukup menggigit. Saya sudah order berkali-kali.",
     rating: 5,
     avatar: "👨",
   },
@@ -13,7 +14,8 @@ const TESTIMONIALS = [
     id: 2,
     name: "Siti Nurhaliza",
     role: "Chef Rumahan",
-    comment: "Kualitas bahan-bahannya terlihat jelas. Saya gunakan untuk memasak dan hasilnya sangat memuaskan. Rekomendasi untuk semua!",
+    comment:
+      "Kualitas bahan-bahannya terlihat jelas. Saya gunakan untuk memasak dan hasilnya sangat memuaskan. Rekomendasi untuk semua!",
     rating: 5,
     avatar: "👩",
   },
@@ -21,7 +23,8 @@ const TESTIMONIALS = [
     id: 3,
     name: "Ahmad Wijaya",
     role: "Pengusaha Kuliner",
-    comment: "Sebagai pemilik restoran, saya mencari supplier sambal berkualitas. Ini dia! Konsisten dan enak. Pelanggan saya juga suka.",
+    comment:
+      "Sebagai pemilik restoran, saya mencari supplier sambal berkualitas. Ini dia! Konsisten dan enak. Pelanggan saya juga suka.",
     rating: 5,
     avatar: "👨",
   },
@@ -41,7 +44,7 @@ export default function Testimonials() {
         </div>
 
         <div className="grid md:grid-cols-3 gap-8">
-          {TESTIMONIALS.map((testimonial) => (
+          {TESTIMONIALS.map(testimonial => (
             <div
               key={testimonial.id}
               className="bg-gradient-to-br from-red-50 to-orange-50 rounded-2xl p-8 border border-red-100 hover:shadow-lg transition-shadow"
@@ -92,3 +95,5 @@ export default function Testimonials() {
     </section>
   );
 }
+
+

@@ -1,4 +1,4 @@
-import { eq, and, gte, lte, desc, asc, sql } from "drizzle-orm";
+import { eq, and, gte, lte, desc, asc, sql, type SQL } from "drizzle-orm";
 export { eq, and, gte, lte, desc, asc, sql };
 import { drizzle } from "drizzle-orm/mysql2";
 import bcryptjs from "bcryptjs";
@@ -43,7 +43,6 @@ export {
   type InsertProduct,
   type InsertCoupon
 };
-import { ENV } from './_core/env';
 
 let _db: ReturnType<typeof drizzle> | null = null;
 
@@ -52,8 +51,7 @@ export async function getDb() {
   if (!_db && process.env.DATABASE_URL) {
     try {
       _db = drizzle(process.env.DATABASE_URL);
-    } catch (error) {
-      console.warn("[Database] Failed to connect:", error);
+    } catch {
       _db = null;
     }
   }
@@ -67,59 +65,53 @@ export async function upsertUser(user: InsertUser): Promise<void> {
 
   const db = await getDb();
   if (!db) {
-    console.warn("[Database] Cannot upsert user: database not available");
     return;
   }
 
-  try {
-    const values: InsertUser = {
-      openId: user.openId,
-    };
-    const updateSet: Record<string, unknown> = {};
+  const values: InsertUser = {
+    openId: user.openId,
+  };
+  const updateSet: Record<string, unknown> = {};
 
-    const textFields = ["name", "email", "loginMethod"] as const;
-    type TextField = (typeof textFields)[number];
+  const textFields = ["name", "email", "loginMethod"] as const;
+  type TextField = (typeof textFields)[number];
 
-    const assignNullable = (field: TextField) => {
-      const value = user[field];
-      if (value === undefined) return;
-      const normalized = value ?? null;
-      values[field] = normalized;
-      updateSet[field] = normalized;
-    };
+  const assignNullable = (field: TextField) => {
+    const value = user[field];
+    if (value === undefined) return;
+    const normalized = value ?? null;
+    values[field] = normalized;
+    updateSet[field] = normalized;
+  };
 
-    textFields.forEach(assignNullable);
+  textFields.forEach(assignNullable);
 
-    if (user.lastSignedIn !== undefined) {
-      values.lastSignedIn = user.lastSignedIn;
-      updateSet.lastSignedIn = user.lastSignedIn;
-    }
-    if (user.role !== undefined) {
-      values.role = user.role;
-      updateSet.role = user.role;
-    }
-
-    if (!values.lastSignedIn) {
-      values.lastSignedIn = new Date();
-    }
-
-    if (Object.keys(updateSet).length === 0) {
-      updateSet.lastSignedIn = new Date();
-    }
-
-    await db.insert(users).values(values).onDuplicateKeyUpdate({
-      set: updateSet,
-    });
-  } catch (error) {
-    console.error("[Database] Failed to upsert user:", error);
-    throw error;
+  if (user.lastSignedIn !== undefined) {
+    values.lastSignedIn = user.lastSignedIn;
+    updateSet.lastSignedIn = user.lastSignedIn;
   }
+  if (user.role !== undefined) {
+    values.role = user.role;
+    updateSet.role = user.role;
+  }
+
+  if (!values.lastSignedIn) {
+    values.lastSignedIn = new Date();
+  }
+
+  if (Object.keys(updateSet).length === 0) {
+    updateSet.lastSignedIn = new Date();
+  }
+
+  await db.insert(users).values(values).onDuplicateKeyUpdate({
+    set: updateSet,
+  });
 }
 
 export async function getUserByOpenId(openId: string) {
   const db = await getDb();
   if (!db) {
-    console.warn("[Database] Cannot get user: database not available");
+    
     return undefined;
   }
 
@@ -132,18 +124,12 @@ export async function getUserByOpenId(openId: string) {
 export async function getUserByEmail(email: string): Promise<User | undefined> {
   const db = await getDb();
   if (!db) {
-    console.warn("[Database] Cannot get user: database not available");
+    
     return undefined;
   }
 
-  console.log(`[Database] Looking up user by email: ${email}`);
+  
   const result = await db.select().from(users).where(eq(users.email, email)).limit(1);
-  console.log(`[Database] Query result: ${result.length} user(s) found`);
-  
-  if (result.length > 0) {
-    console.log(`[Database] User found: ${result[0].email}`);
-  }
-  
   return result.length > 0 ? result[0] : undefined;
 }
 
@@ -156,56 +142,51 @@ export async function createDatabaseUser(data: {
 }): Promise<User | null> {
   const db = await getDb();
   if (!db) {
-    console.warn("[Database] Cannot create user: database not available");
+    
     return null;
   }
 
-  try {
-    const passwordHash = await bcryptjs.hash(data.password, 10);
-    const result = await db.insert(users).values({
-      email: data.email,
-      name: data.name || null,
-      passwordHash,
-      role: data.role || 'user',
-      phone: data.phone || null,
-      loginMethod: 'database',
-      openId: `db_${data.email}`, // Generate a unique openId for database users
-      lastSignedIn: new Date(),
-    });
-    
-    // Retrieve and return the created user
-    const newUser = await getUserByEmail(data.email);
-    return newUser || null;
-  } catch (error) {
-    console.error("[Database] Failed to create user:", error);
-    throw error;
-  }
+  const passwordHash = await bcryptjs.hash(data.password, 10);
+  await db.insert(users).values({
+    email: data.email,
+    name: data.name || null,
+    passwordHash,
+    role: data.role || "user",
+    phone: data.phone || null,
+    loginMethod: "database",
+    openId: `db_${data.email}`, // Generate a unique openId for database users
+    lastSignedIn: new Date(),
+  });
+
+  // Retrieve and return the created user
+  const newUser = await getUserByEmail(data.email);
+  return newUser || null;
 }
 
 export async function verifyPassword(email: string, password: string): Promise<User | null> {
-  console.log(`[VerifyPassword] Starting verification for: ${email}`);
+  
   
   const user = await getUserByEmail(email);
   
   if (!user) {
-    console.log(`[VerifyPassword] User not found: ${email}`);
+    
     return null;
   }
   
   if (!user.passwordHash) {
-    console.log(`[VerifyPassword] User found but no password hash: ${email}`);
+    
     return null;
   }
 
-  console.log(`[VerifyPassword] Comparing passwords for: ${email}`);
+  
   const isValid = await bcryptjs.compare(password, user.passwordHash);
   
   if (!isValid) {
-    console.log(`[VerifyPassword] Password mismatch for: ${email}`);
+    
     return null;
   }
 
-  console.log(`[VerifyPassword] Password valid for: ${email}`);
+  
 
   // Update last signed in time
   const db = await getDb();
@@ -223,7 +204,7 @@ export async function getProducts(filters?: { isActive?: boolean; search?: strin
   const db = await getDb();
   if (!db) return [];
 
-  const conditions: any[] = [];
+  const conditions: SQL[] = [];
   
   if (filters?.isActive !== undefined) {
     conditions.push(eq(products.isActive, filters.isActive));
@@ -703,12 +684,12 @@ export async function getSetting(key: string) {
   
   try {
     return JSON.parse(result[0].value);
-  } catch (e) {
+  } catch {
     return result[0].value;
   }
 }
 
-export async function updateSetting(key: string, value: any) {
+export async function updateSetting(key: string, value: unknown) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
   
