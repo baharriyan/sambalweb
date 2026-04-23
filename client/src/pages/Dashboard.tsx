@@ -183,7 +183,7 @@ export default function Dashboard() {
       address: address.address,
       city: address.city,
       postalCode: address.postalCode || "",
-      isPrimary: address.isPrimary,
+      isPrimary: !!address.isPrimary,
     });
     setEditingAddressId(address.id);
   };
@@ -651,7 +651,7 @@ export default function Dashboard() {
                                 <p className="font-semibold text-gray-900">
                                   {address.fullName}
                                 </p>
-                                {address.isPrimary && (
+                                {!!address.isPrimary && (
                                   <span className="text-xs bg-green-100 text-green-800 px-2 py-1 rounded-full">
                                     Utama
                                   </span>

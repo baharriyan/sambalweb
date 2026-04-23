@@ -37,7 +37,7 @@ async function findAvailablePort(startPort: number = 3000): Promise<number> {
   throw new Error(`No available port found starting from ${startPort}`);
 }
 
-async function startServer() {
+async function createServerApp() {
   const app = express();
   const server = createServer(app);
 
@@ -67,12 +67,11 @@ async function startServer() {
   app.use(csrfTokenMiddleware);
 
   // CSRF validation middleware (untuk state-changing requests)
-  // Skip untuk tRPC (applied per-endpoint)
   app.use(validateCSRFToken);
 
   registerStorageProxy(app);
 
-  // tRPC API (has its own security, skip rate limiting)
+  // tRPC API
   app.use(
     "/api/trpc",
     createExpressMiddleware({
@@ -88,15 +87,28 @@ async function startServer() {
     serveStatic(app);
   }
 
-  const preferredPort = parseInt(process.env.PORT || "3000");
-  const port = await findAvailablePort(preferredPort);
+  return { app, server };
+}
 
-  server.listen(port, () => {
-    // Server started
+// Untuk Vercel Serverless Function
+export const appPromise = createServerApp().then(({ app }) => app);
+export default async (req: any, res: any) => {
+  const app = await appPromise;
+  return app(req, res);
+};
+
+// Untuk Standalone Server (VPS/Local)
+if (process.env.NODE_ENV !== "production" || !process.env.VERCEL) {
+  createServerApp().then(async ({ server }) => {
+    const preferredPort = parseInt(process.env.PORT || "3000");
+    const port = await findAvailablePort(preferredPort);
+    server.listen(port, () => {
+      console.log(`Server running at http://localhost:${port}`);
+    });
+  }).catch(err => {
+    console.error("Failed to start server:", err);
+    process.exit(1);
   });
 }
 
-startServer().catch(() => {
-  process.exit(1);
-});
 
