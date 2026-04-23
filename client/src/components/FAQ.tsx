@@ -1,51 +1,76 @@
 import { useState } from "react";
-import { ChevronDown } from "lucide-react";
+import { ChevronDown, Loader2 } from "lucide-react";
+import { trpc } from "@/lib/trpc";
 
-const FAQS = [
-  {
-    id: 1,
-    question: "Berapa lama sambal dapat bertahan?",
-    answer:
-      "Sambal premium kami dapat bertahan hingga 3 bulan jika disimpan di tempat yang sejuk dan kering. Setelah dibuka, lebih baik disimpan di kulkas dan habiskan dalam 1 bulan untuk hasil terbaik.",
-  },
-  {
-    id: 2,
-    question: "Apakah sambal ini mengandung pengawet?",
-    answer:
-      "Tidak! Semua produk kami 100% bahan alami tanpa pengawet buatan. Kami hanya menggunakan bahan-bahan segar pilihan dan proses tradisional yang aman.",
-  },
-  {
-    id: 3,
-    question: "Bagaimana cara pengiriman?",
-    answer:
-      "Kami bekerja sama dengan 3 kurir terpercaya: JNE, SiCepat, dan J&T. Anda bisa memilih kurir favorit saat checkout. Pengiriman biasanya 1-3 hari kerja tergantung lokasi.",
-  },
-  {
-    id: 4,
-    question: "Apakah produk halal?",
-    answer:
-      "Ya, semua produk kami telah tersertifikasi halal. Kami sangat memperhatikan setiap aspek produksi untuk memastikan kehalalan produk.",
-  },
-  {
-    id: 5,
-    question: "Apa metode pembayaran yang tersedia?",
-    answer:
-      "Kami menerima transfer bank (BCA, Mandiri, BNI) dan pembayaran via QRIS. Semua metode pembayaran aman dan terpercaya.",
-  },
-  {
-    id: 6,
-    question: "Bagaimana jika produk rusak saat pengiriman?",
-    answer:
-      "Jika produk rusak atau tidak sesuai, hubungi kami melalui WhatsApp dengan foto bukti. Kami akan mengganti produk Anda tanpa biaya tambahan.",
-  },
-];
+interface FAQItem {
+  id: number;
+  question: string;
+  answer: string;
+}
 
 export default function FAQ() {
+  const { data: faqContent, isLoading } = trpc.settings.get.useQuery({
+    key: "faq_content",
+  });
+  const { data: contactInfo } = trpc.settings.get.useQuery({
+    key: "contact_info",
+  });
+
   const [openId, setOpenId] = useState<number | null>(null);
+
+  const defaultFAQS: FAQItem[] = [
+    {
+      id: 1,
+      question: "Berapa lama sambal dapat bertahan?",
+      answer:
+        "Sambal premium kami dapat bertahan hingga 3 bulan jika disimpan di tempat yang sejuk dan kering. Setelah dibuka, lebih baik disimpan di kulkas dan habiskan dalam 1 bulan untuk hasil terbaik.",
+    },
+    {
+      id: 2,
+      question: "Apakah sambal ini mengandung pengawet?",
+      answer:
+        "Tidak! Semua produk kami 100% bahan alami tanpa pengawet buatan. Kami hanya menggunakan bahan-bahan segar pilihan dan proses tradisional yang aman.",
+    },
+    {
+      id: 3,
+      question: "Bagaimana cara pengiriman?",
+      answer:
+        "Kami bekerja sama dengan 3 kurir terpercaya: JNE, SiCepat, dan J&T. Anda bisa memilih kurir favorit saat checkout. Pengiriman biasanya 1-3 hari kerja tergantung lokasi.",
+    },
+    {
+      id: 4,
+      question: "Apakah produk halal?",
+      answer:
+        "Ya, semua produk kami telah tersertifikasi halal. Kami sangat memperhatikan setiap aspek produksi untuk memastikan kehalalan produk.",
+    },
+    {
+      id: 5,
+      question: "Apa metode pembayaran yang tersedia?",
+      answer:
+        "Kami menerima transfer bank (BCA, Mandiri, BNI) dan pembayaran via QRIS. Semua metode pembayaran aman dan terpercaya.",
+    },
+    {
+      id: 6,
+      question: "Bagaimana jika produk rusak saat pengiriman?",
+      answer:
+        "Jika produk rusak atau tidak sesuai, hubungi kami melalui WhatsApp dengan foto bukti. Kami akan mengganti produk Anda tanpa biaya tambahan.",
+    },
+  ];
+
+  const faqs = (faqContent as FAQItem[]) || defaultFAQS;
+  const whatsappNumber = (contactInfo as any)?.whatsapp || "6281234567890";
 
   const toggleFAQ = (id: number) => {
     setOpenId(openId === id ? null : id);
   };
+
+  if (isLoading) {
+    return (
+      <div className="py-20 flex justify-center">
+        <Loader2 className="w-8 h-8 animate-spin text-red-600" />
+      </div>
+    );
+  }
 
   return (
     <section
@@ -63,7 +88,7 @@ export default function FAQ() {
         </div>
 
         <div className="space-y-4">
-          {FAQS.map(faq => (
+          {faqs.map(faq => (
             <div
               key={faq.id}
               className="bg-white border border-gray-200 rounded-lg overflow-hidden hover:border-red-300 transition-colors"
@@ -98,7 +123,7 @@ export default function FAQ() {
             Hubungi kami melalui WhatsApp untuk bantuan lebih lanjut
           </p>
           <a
-            href="https://wa.me/6281234567890"
+            href={`https://wa.me/${whatsappNumber}`}
             target="_blank"
             rel="noopener noreferrer"
             className="inline-block bg-white text-red-600 font-semibold px-6 py-2 rounded-lg hover:bg-gray-100 transition-colors"

@@ -1,8 +1,38 @@
 import { Link } from "wouter";
-import { Mail, Phone, Instagram, Facebook } from "lucide-react";
+import { Mail, Phone, Instagram, Facebook, Loader2 } from "lucide-react";
+import { trpc } from "@/lib/trpc";
+
+interface ContactInfo {
+  whatsapp?: string;
+  email?: string;
+  address?: string;
+  instagram?: string;
+  facebook?: string;
+  tiktok?: string;
+}
 
 export default function Footer() {
   const currentYear = new Date().getFullYear();
+  const { data: contactInfo, isLoading } = trpc.settings.get.useQuery({
+    key: "contact_info",
+  });
+
+  const contact = (contactInfo as ContactInfo) || {
+    whatsapp: "6281234567890",
+    email: "info@sambalpremium.com",
+    address: "Jl. Sambal No. 1, Jakarta Selatan",
+    instagram: "sambalpremium",
+    facebook: "sambalpremium",
+    tiktok: "sambalpremium",
+  };
+
+  if (isLoading) {
+    return (
+      <footer className="bg-gray-900 text-gray-300 py-8 text-center">
+        <Loader2 className="w-6 h-6 animate-spin mx-auto text-red-400" />
+      </footer>
+    );
+  }
 
   return (
     <footer className="bg-gray-900 text-gray-300">
@@ -22,6 +52,11 @@ export default function Footer() {
               Sambal berkualitas premium dibuat dengan bahan pilihan terbaik dan
               cinta untuk keluarga Indonesia.
             </p>
+            {contact.address && (
+              <p className="mt-4 text-xs text-gray-500 italic">
+                {contact.address}
+              </p>
+            )}
           </div>
 
           {/* Quick Links */}
@@ -30,14 +65,14 @@ export default function Footer() {
             <ul className="space-y-2 text-sm">
               <li>
                 <Link href="/">
-                  <a className="hover:text-red-400 transition-colors">
+                  <div className="hover:text-red-400 transition-colors cursor-pointer">
                     Beranda
-                  </a>
+                  </div>
                 </Link>
               </li>
               <li>
                 <Link href="/catalog">
-                  <a className="hover:text-red-400 transition-colors">Produk</a>
+                  <div className="hover:text-red-400 transition-colors cursor-pointer">Produk</div>
                 </Link>
               </li>
               <li>
@@ -60,26 +95,30 @@ export default function Footer() {
           <div>
             <h4 className="font-bold text-white mb-4">Hubungi Kami</h4>
             <ul className="space-y-3 text-sm">
-              <li className="flex items-center gap-2">
-                <Mail className="w-4 h-4 text-red-400" />
-                <a
-                  href="mailto:info@sambalpremium.com"
-                  className="hover:text-red-400 transition-colors"
-                >
-                  info@sambalpremium.com
-                </a>
-              </li>
-              <li className="flex items-center gap-2">
-                <Phone className="w-4 h-4 text-red-400" />
-                <a
-                  href="https://wa.me/6281234567890"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="hover:text-red-400 transition-colors"
-                >
-                  +62 812-3456-7890
-                </a>
-              </li>
+              {contact.email && (
+                <li className="flex items-center gap-2">
+                  <Mail className="w-4 h-4 text-red-400" />
+                  <a
+                    href={`mailto:${contact.email}`}
+                    className="hover:text-red-400 transition-colors"
+                  >
+                    {contact.email}
+                  </a>
+                </li>
+              )}
+              {contact.whatsapp && (
+                <li className="flex items-center gap-2">
+                  <Phone className="w-4 h-4 text-red-400" />
+                  <a
+                    href={`https://wa.me/${contact.whatsapp}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="hover:text-red-400 transition-colors"
+                  >
+                    +{contact.whatsapp.slice(0, 2)} {contact.whatsapp.slice(2, 5)}-{contact.whatsapp.slice(5, 9)}-{contact.whatsapp.slice(9)}
+                  </a>
+                </li>
+              )}
             </ul>
           </div>
 
@@ -87,30 +126,36 @@ export default function Footer() {
           <div>
             <h4 className="font-bold text-white mb-4">Ikuti Kami</h4>
             <div className="flex gap-4">
-              <a
-                href="https://instagram.com/sambalpremium"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="w-10 h-10 bg-gray-800 rounded-full flex items-center justify-center hover:bg-red-600 transition-colors"
-              >
-                <Instagram className="w-5 h-5" />
-              </a>
-              <a
-                href="https://facebook.com/sambalpremium"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="w-10 h-10 bg-gray-800 rounded-full flex items-center justify-center hover:bg-red-600 transition-colors"
-              >
-                <Facebook className="w-5 h-5" />
-              </a>
-              <a
-                href="https://tiktok.com/@sambalpremium"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="w-10 h-10 bg-gray-800 rounded-full flex items-center justify-center hover:bg-red-600 transition-colors"
-              >
-                <span className="text-sm font-bold">TT</span>
-              </a>
+              {contact.instagram && (
+                <a
+                  href={`https://instagram.com/${contact.instagram.replace('@', '')}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="w-10 h-10 bg-gray-800 rounded-full flex items-center justify-center hover:bg-red-600 transition-colors"
+                >
+                  <Instagram className="w-5 h-5" />
+                </a>
+              )}
+              {contact.facebook && (
+                <a
+                  href={`https://facebook.com/${contact.facebook}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="w-10 h-10 bg-gray-800 rounded-full flex items-center justify-center hover:bg-red-600 transition-colors"
+                >
+                  <Facebook className="w-5 h-5" />
+                </a>
+              )}
+              {contact.tiktok && (
+                <a
+                  href={`https://tiktok.com/@${contact.tiktok.replace('@', '')}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="w-10 h-10 bg-gray-800 rounded-full flex items-center justify-center hover:bg-red-600 transition-colors"
+                >
+                  <span className="text-sm font-bold">TT</span>
+                </a>
+              )}
             </div>
           </div>
         </div>

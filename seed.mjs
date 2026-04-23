@@ -1,4 +1,5 @@
 import { drizzle } from "drizzle-orm/mysql2";
+import { eq } from "drizzle-orm";
 import { products, users } from "./drizzle/schema.ts";
 import bcryptjs from "bcryptjs";
 import dotenv from "dotenv";
@@ -108,6 +109,162 @@ async function seed() {
       );
     } else {
       console.log("✅ Users already exist. Skipping user seed.");
+    }
+
+    // Check and seed siteSettings
+    const { siteSettings } = await import("./drizzle/schema.ts");
+    const existingSettings = await db.select().from(siteSettings).limit(1);
+
+    if (existingSettings.length === 0) {
+      const defaultSettings = [
+        {
+          key: "hero_content",
+          value: JSON.stringify({
+            badge: "Sambal Artisanal Terbaik 2024",
+            title: 'RASAKAN <br /><span class="text-transparent bg-clip-text bg-gradient-to-r from-red-600 to-orange-600">KEPEDASAN <br /></span>HAKIKI.',
+            description: "Kombinasi sempurna antara cabai segar pilihan dan rempah rahasia. Homemade, tanpa pengawet, dan 100% Halal.",
+            imageUrl: "/attached_assets/hero.png"
+          })
+        },
+        {
+          key: "system_settings",
+          value: JSON.stringify({
+            midtransSimulation: true,
+            packingFee: 3000,
+            freeShippingThreshold: 500000
+          })
+        },
+        {
+          key: "how_to_order",
+          value: JSON.stringify([
+            {
+              number: 1,
+              title: "Pilih Varian & Jumlah",
+              description: "Pilih varian sambal favorit Anda dan tentukan jumlah yang diinginkan dari berbagai pilihan yang tersedia.",
+              icon: "ShoppingCart"
+            },
+            {
+              number: 2,
+              title: "Checkout & Isi Data",
+              description: "Lanjutkan ke checkout, isi data diri lengkap, pilih kurir pengiriman, dan metode pembayaran yang Anda inginkan.",
+              icon: "CreditCard"
+            },
+            {
+              number: 3,
+              title: "Pembayaran & Pengiriman",
+              description: "Transfer pembayaran ke rekening toko atau scan QRIS. Pesanan Anda akan masuk ke WhatsApp kami untuk diproses.",
+              icon: "Truck"
+            }
+          ])
+        },
+        {
+          key: "faq_content",
+          value: JSON.stringify([
+            { id: 1, question: "Berapa lama sambal dapat bertahan?", answer: "Sambal premium kami dapat bertahan hingga 3 bulan jika disimpan di tempat yang sejuk dan kering. Setelah dibuka, lebih baik disimpan di kulkas dan habiskan dalam 1 bulan untuk hasil terbaik." },
+            { id: 2, question: "Apakah sambal ini mengandung pengawet?", answer: "Tidak! Semua produk kami 100% bahan alami tanpa pengawet buatan. Kami hanya menggunakan bahan-bahan segar pilihan dan proses tradisional yang aman." },
+            { id: 3, question: "Bagaimana cara pengiriman?", answer: "Kami bekerja sama dengan 3 kurir terpercaya: JNE, SiCepat, dan J&T. Anda bisa memilih kurir favorit saat checkout. Pengiriman biasanya 1-3 hari kerja tergantung lokasi." },
+            { id: 4, question: "Apakah produk halal?", answer: "Ya, semua produk kami telah tersertifikasi halal. Kami sangat memperhatikan setiap aspek produksi untuk memastikan kehalalan produk." },
+            { id: 5, question: "Apa metode pembayaran yang tersedia?", answer: "Kami menerima transfer bank (BCA, Mandiri, BNI) dan pembayaran via QRIS. Semua metode pembayaran aman dan terpercaya." },
+            { id: 6, question: "Bagaimana jika produk rusak saat pengiriman?", answer: "Jika produk rusak atau tidak sesuai, hubungi kami melalui WhatsApp dengan foto bukti. Kami akan mengganti produk Anda tanpa biaya tambahan." }
+          ])
+        },
+        {
+          key: "contact_info",
+          value: JSON.stringify({
+            whatsapp: "6281234567890",
+            email: "info@sambalpremium.com",
+            address: "Jl. Sambal No. 1, Jakarta Selatan",
+            instagram: "sambalpremium",
+            facebook: "sambalpremium",
+            tiktok: "sambalpremium"
+          })
+        },
+        {
+          key: "testimonials_content",
+          value: JSON.stringify([
+            { id: 1, name: "Budi Santoso", role: "Pecinta Masakan Pedas", comment: "Sambal ini benar-benar luar biasa! Rasa yang sempurna, tidak terlalu pedas tapi cukup menggigit. Saya sudah order berkali-kali.", rating: 5, avatar: "👨" },
+            { id: 2, name: "Siti Nurhaliza", role: "Chef Rumahan", comment: "Kualitas bahan-bahannya terlihat jelas. Saya gunakan untuk memasak dan hasilnya sangat memuaskan. Rekomendasi untuk semua!", rating: 5, avatar: "👩" },
+            { id: 3, name: "Ahmad Wijaya", role: "Pengusaha Kuliner", comment: "Sebagai pemilik restoran, saya mencari supplier sambal berkualitas. Ini dia! Konsisten dan enak. Pelanggan saya juga suka.", rating: 5, avatar: "👨" }
+          ])
+        }
+      ];
+
+      for (const setting of defaultSettings) {
+        const existing = await db.select().from(siteSettings).where(eq(siteSettings.key, setting.key)).limit(1);
+        if (existing.length === 0) {
+          await db.insert(siteSettings).values(setting);
+          console.log(`✅ Seeded setting: ${setting.key}`);
+        } else {
+          console.log(`ℹ️ Setting ${setting.key} already exists. Skipping.`);
+        }
+      }
+    } else {
+      // Even if siteSettings exist, check if the NEW keys are missing
+      const defaultSettings = [
+        {
+          key: "how_to_order",
+          value: JSON.stringify([
+            {
+              number: 1,
+              title: "Pilih Varian & Jumlah",
+              description: "Pilih varian sambal favorit Anda dan tentukan jumlah yang diinginkan dari berbagai pilihan yang tersedia.",
+              icon: "ShoppingCart"
+            },
+            {
+              number: 2,
+              title: "Checkout & Isi Data",
+              description: "Lanjutkan ke checkout, isi data diri lengkap, pilih kurir pengiriman, dan metode pembayaran yang Anda inginkan.",
+              icon: "CreditCard"
+            },
+            {
+              number: 3,
+              title: "Pembayaran & Pengiriman",
+              description: "Transfer pembayaran ke rekening toko atau scan QRIS. Pesanan Anda akan masuk ke WhatsApp kami untuk diproses.",
+              icon: "Truck"
+            }
+          ])
+        },
+        {
+          key: "faq_content",
+          value: JSON.stringify([
+            { id: 1, question: "Berapa lama sambal dapat bertahan?", answer: "Sambal premium kami dapat bertahan hingga 3 bulan jika disimpan di tempat yang sejuk dan kering. Setelah dibuka, lebih baik disimpan di kulkas dan habiskan dalam 1 bulan untuk hasil terbaik." },
+            { id: 2, question: "Apakah sambal ini mengandung pengawet?", answer: "Tidak! Semua produk kami 100% bahan alami tanpa pengawet buatan. Kami hanya menggunakan bahan-bahan segar pilihan dan proses tradisional yang aman." },
+            { id: 3, question: "Bagaimana cara pengiriman?", answer: "Kami bekerja sama dengan 3 kurir terpercaya: JNE, SiCepat, dan J&T. Anda bisa memilih kurir favorit saat checkout. Pengiriman biasanya 1-3 hari kerja tergantung lokasi." },
+            { id: 4, question: "Apakah produk halal?", answer: "Ya, semua produk kami telah tersertifikasi halal. Kami sangat memperhatikan setiap aspek produksi untuk memastikan kehalalan produk." },
+            { id: 5, question: "Apa metode pembayaran yang tersedia?", answer: "Kami menerima transfer bank (BCA, Mandiri, BNI) dan pembayaran via QRIS. Semua metode pembayaran aman dan terpercaya." },
+            { id: 6, question: "Bagaimana jika produk rusak saat pengiriman?", answer: "Jika produk rusak atau tidak sesuai, hubungi kami melalui WhatsApp dengan foto bukti. Kami akan mengganti produk Anda tanpa biaya tambahan." }
+          ])
+        },
+        {
+          key: "contact_info",
+          value: JSON.stringify({
+            whatsapp: "6281234567890",
+            email: "info@sambalpremium.com",
+            address: "Jl. Sambal No. 1, Jakarta Selatan",
+            instagram: "sambalpremium",
+            facebook: "sambalpremium",
+            tiktok: "sambalpremium"
+          })
+        },
+        {
+          key: "testimonials_content",
+          value: JSON.stringify([
+            { id: 1, name: "Budi Santoso", role: "Pecinta Masakan Pedas", comment: "Sambal ini benar-benar luar biasa! Rasa yang sempurna, tidak terlalu pedas tapi cukup menggigit. Saya sudah order berkali-kali.", rating: 5, avatar: "👨" },
+            { id: 2, name: "Siti Nurhaliza", role: "Chef Rumahan", comment: "Kualitas bahan-bahannya terlihat jelas. Saya gunakan untuk memasak dan hasilnya sangat memuaskan. Rekomendasi untuk semua!", rating: 5, avatar: "👩" },
+            { id: 3, name: "Ahmad Wijaya", role: "Pengusaha Kuliner", comment: "Sebagai pemilik restoran, saya mencari supplier sambal berkualitas. Ini dia! Konsisten dan enak. Pelanggan saya juga suka.", rating: 5, avatar: "👨" }
+          ])
+        }
+      ];
+
+      const { eq } = await import("drizzle-orm");
+      for (const setting of defaultSettings) {
+        const existing = await db.select().from(siteSettings).where(eq(siteSettings.key, setting.key)).limit(1);
+        if (existing.length === 0) {
+          await db.insert(siteSettings).values(setting);
+          console.log(`✅ Seeded missing setting: ${setting.key}`);
+        }
+      }
+      console.log("✅ Site settings check completed.");
     }
 
     console.log("🎉 Seed completed successfully!");

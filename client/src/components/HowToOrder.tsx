@@ -1,29 +1,58 @@
-import { ShoppingCart, CreditCard, Truck } from "lucide-react";
+import { ShoppingCart, CreditCard, Truck, HelpCircle, Loader2 } from "lucide-react";
+import { trpc } from "@/lib/trpc";
+
+const ICON_MAP = {
+  ShoppingCart,
+  CreditCard,
+  Truck,
+  HelpCircle,
+};
+
+interface Step {
+  number: number;
+  title: string;
+  description: string;
+  icon: keyof typeof ICON_MAP;
+}
 
 export default function HowToOrder() {
-  const steps = [
+  const { data: howToOrderContent, isLoading } = trpc.settings.get.useQuery({
+    key: "how_to_order",
+  });
+
+  const defaultSteps: Step[] = [
     {
       number: 1,
       title: "Pilih Varian & Jumlah",
       description:
         "Pilih varian sambal favorit Anda dan tentukan jumlah yang diinginkan dari berbagai pilihan yang tersedia.",
-      icon: ShoppingCart,
+      icon: "ShoppingCart",
     },
     {
       number: 2,
       title: "Checkout & Isi Data",
       description:
         "Lanjutkan ke checkout, isi data diri lengkap, pilih kurir pengiriman, dan metode pembayaran yang Anda inginkan.",
-      icon: CreditCard,
+      icon: "CreditCard",
     },
     {
       number: 3,
       title: "Pembayaran & Pengiriman",
       description:
         "Transfer pembayaran ke rekening toko atau scan QRIS. Pesanan Anda akan masuk ke WhatsApp kami untuk diproses.",
-      icon: Truck,
+      icon: "Truck",
     },
   ];
+
+  const steps = (howToOrderContent as Step[]) || defaultSteps;
+
+  if (isLoading) {
+    return (
+      <div className="py-20 flex justify-center">
+        <Loader2 className="w-8 h-8 animate-spin text-red-600" />
+      </div>
+    );
+  }
 
   return (
     <section
@@ -42,7 +71,7 @@ export default function HowToOrder() {
 
         <div className="grid md:grid-cols-3 gap-8">
           {steps.map((step, index) => {
-            const Icon = step.icon;
+            const Icon = ICON_MAP[step.icon] || HelpCircle;
             return (
               <div key={step.number} className="relative">
                 {/* Connector Line */}
