@@ -12,6 +12,9 @@
       content="Nikmati kelezatan sambal artisanal premium yang dibuat dari cabai segar pilihan dan rempah rahasia. Homemade, tanpa pengawet, dan 100% Halal."
     />
 
+    <!-- Preload LCP hero image for fastest render -->
+    <link rel="preload" href="/attached_assets/hero.png" as="image" fetchpriority="high" />
+
     <!-- Resource Hints -->
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -30,9 +33,34 @@
         rel="stylesheet"
       />
     </noscript>
+
+    <!-- Inline critical CSS for instant first paint -->
+    <style>
+      /* Prevent FOUC - show background immediately */
+      body { background-color: #faf9f6; margin: 0; }
+      #root { min-height: 100vh; }
+      /* Minimal loading indicator in case JS takes time */
+      .initial-loader {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        min-height: 100vh;
+        background: #faf9f6;
+      }
+      .initial-loader::after {
+        content: '';
+        width: 40px;
+        height: 40px;
+        border: 3px solid #fef2f2;
+        border-top-color: #dc2626;
+        border-radius: 50%;
+        animation: spin 0.6s linear infinite;
+      }
+      @keyframes spin { to { transform: rotate(360deg); } }
+    </style>
   </head>
   <body>
-    <div id="root"></div>
+    <div id="root"><div class="initial-loader"></div></div>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>

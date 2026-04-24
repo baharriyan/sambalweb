@@ -3,6 +3,7 @@ import express from "express";
 import cookieParser from "cookie-parser";
 import compression from "compression";
 import { createServer } from "http";
+import path from "path";
 import net from "net";
 import { createExpressMiddleware } from "@trpc/server/adapters/express";
 import { registerStorageProxy } from "./storageProxy";
@@ -17,6 +18,7 @@ import {
   sanitizeInput,
   trustProxyMiddleware,
 } from "./middleware";
+import { startPaymentSyncJob } from "../payment-sync";
 
 function isPortAvailable(port: number): Promise<boolean> {
   return new Promise(resolve => {
@@ -71,6 +73,53 @@ async function createServerApp() {
 
   registerStorageProxy(app);
 
+  // Serve static asset directories with caching
+  const assetsPath = path.resolve(import.meta.dirname, "../..", "attached_assets");
+  const uploadsPath = path.resolve(import.meta.dirname, "../..", "client", "public", "uploads");
+  app.use("/attached_assets", express.static(assetsPath, { maxAge: "7d" }));
+  app.use("/uploads", express.static(uploadsPath, { maxAge: "7d" }));
+
+  // Midtrans Webhook
+  app.post("/api/payments/webhook", async (req, res) => {
+    try {
+      const notification = req.body;
+      const orderNumber = notification.order_id;
+      const transactionStatus = notification.transaction_status;
+      const fraudStatus = notification.fraud_status;
+
+      console.log(`[MidtransWebhook] Received notification for Order #${orderNumber}: ${transactionStatus}`);
+
+      const { updateOrderStatusByNumber } = await import("../db");
+
+      // Map status
+      let newStatus: "PROCESSING" | "CANCELLED" | null = null;
+
+      if (transactionStatus === "settlement" || transactionStatus === "capture") {
+        if (fraudStatus === "challenge") {
+          // TODO: handle challenge? Usually we wait for settlement
+        } else {
+          newStatus = "PROCESSING";
+        }
+      } else if (
+        transactionStatus === "deny" ||
+        transactionStatus === "cancel" ||
+        transactionStatus === "expire"
+      ) {
+        newStatus = "CANCELLED";
+      }
+
+      if (newStatus) {
+        await updateOrderStatusByNumber(orderNumber, newStatus);
+        console.log(`[MidtransWebhook] Order #${orderNumber} updated to ${newStatus}`);
+      }
+
+      res.status(200).send("OK");
+    } catch (error) {
+      console.error("[MidtransWebhook] Error processing notification:", error);
+      res.status(500).send("Internal Server Error");
+    }
+  });
+
   // tRPC API
   app.use(
     "/api/trpc",
@@ -86,6 +135,9 @@ async function createServerApp() {
   } else {
     serveStatic(app);
   }
+
+  // Start background payment sync job (every 10 minutes)
+  startPaymentSyncJob();
 
   return { app, server };
 }

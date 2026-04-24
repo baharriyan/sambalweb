@@ -234,7 +234,7 @@ export default function Checkout() {
       <Navbar />
       <main className="flex-1 py-12 px-4">
         <div className="max-w-6xl mx-auto">
-          <h1 className="text-4xl font-bold mb-8 text-slate-800">Checkout</h1>
+          <h1 className="text-4xl font-black mb-8 text-slate-900">Checkout</h1>
           <div className="grid lg:grid-cols-3 gap-8">
             <div className="lg:col-span-2">
               <form
@@ -242,9 +242,9 @@ export default function Checkout() {
                 onSubmit={handleSubmit}
                 className="space-y-8"
               >
-                <Card className="border-slate-200 shadow-sm overflow-hidden border-t-4 border-t-red-600">
-                  <CardHeader className="bg-slate-50/50">
-                    <CardTitle className="text-xl">
+                <Card className="border-slate-200 shadow-sm overflow-hidden border-t-[6px] border-t-red-600 rounded-2xl">
+                  <CardHeader className="bg-slate-50 border-b border-slate-100">
+                    <CardTitle className="text-xl font-bold text-slate-900">
                       Informasi Pelanggan
                     </CardTitle>
                   </CardHeader>
@@ -278,10 +278,10 @@ export default function Checkout() {
                   </CardContent>
                 </Card>
 
-                <Card className="border-slate-200 shadow-sm overflow-hidden border-t-4 border-t-red-600">
-                  <CardHeader className="bg-slate-50/50">
+                <Card className="border-slate-200 shadow-sm overflow-hidden border-t-[6px] border-t-red-600 rounded-2xl">
+                  <CardHeader className="bg-slate-50 border-b border-slate-100">
                     <div className="flex justify-between items-center">
-                      <CardTitle className="text-xl">
+                      <CardTitle className="text-xl font-bold text-slate-900">
                         Alamat Pengiriman
                       </CardTitle>
                       {addresses && addresses.length > 0 && (
@@ -318,8 +318,8 @@ export default function Checkout() {
                     />
 
                     <div className="grid md:grid-cols-2 gap-4">
-                      <div className="space-y-1">
-                        <label className="text-xs font-semibold text-slate-500 uppercase">
+                      <div className="space-y-1.5">
+                        <label className="text-xs font-bold text-slate-700 uppercase tracking-wider">
                           Provinsi Tujuan *
                         </label>
                         <Select
@@ -340,8 +340,8 @@ export default function Checkout() {
                           </SelectContent>
                         </Select>
                       </div>
-                      <div className="space-y-1">
-                        <label className="text-xs font-semibold text-slate-500 uppercase">
+                      <div className="space-y-1.5">
+                        <label className="text-xs font-bold text-slate-700 uppercase tracking-wider">
                           Kota/Kabupaten
                         </label>
                         <Input
@@ -363,16 +363,16 @@ export default function Checkout() {
                   </CardContent>
                 </Card>
 
-                <Card className="border-slate-200 shadow-sm overflow-hidden border-t-4 border-t-red-600">
-                  <CardHeader className="bg-slate-50/50">
-                    <CardTitle className="text-xl">
+                <Card className="border-slate-200 shadow-sm overflow-hidden border-t-[6px] border-t-red-600 rounded-2xl">
+                  <CardHeader className="bg-slate-50 border-b border-slate-100">
+                    <CardTitle className="text-xl font-bold text-slate-900">
                       Metode Pengiriman & Pembayaran
                     </CardTitle>
                   </CardHeader>
                   <CardContent className="space-y-4 pt-6">
                     <div className="grid md:grid-cols-2 gap-4">
                       <div className="space-y-2">
-                        <label className="text-sm font-medium text-slate-700">
+                        <label className="text-sm font-bold text-slate-800">
                           Pilih Kurir
                         </label>
                         <Select
@@ -395,7 +395,7 @@ export default function Checkout() {
                       </div>
 
                       <div className="space-y-2">
-                        <label className="text-sm font-medium text-slate-700">
+                        <label className="text-sm font-bold text-slate-800">
                           Metode Pembayaran
                         </label>
                         <Select
@@ -420,7 +420,7 @@ export default function Checkout() {
                     </div>
                     {formData.paymentMethod === "TRANSFER_BANK" && (
                       <div className="space-y-2">
-                        <label className="text-sm font-medium text-slate-700">
+                        <label className="text-sm font-bold text-slate-800">
                           Pilih Bank
                         </label>
                         <Select
@@ -456,8 +456,8 @@ export default function Checkout() {
 
             <div>
               <Card className="sticky top-20 border-slate-200 shadow-md">
-                <CardHeader className="bg-slate-50 border-b border-slate-100 rounded-t-lg">
-                  <CardTitle className="text-xl">Ringkasan Pesanan</CardTitle>
+                <CardHeader className="bg-slate-50 border-b border-slate-100 rounded-t-2xl">
+                  <CardTitle className="text-xl font-bold text-slate-900">Ringkasan Pesanan</CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4 pt-6">
                   <div className="space-y-3 border-b border-dashed pb-4">
@@ -468,7 +468,7 @@ export default function Checkout() {
                       >
                         <span className="text-slate-600">
                           {item.productName}{" "}
-                          <span className="text-slate-400">
+                          <span className="text-slate-500">
                             x{item.quantity}
                           </span>
                         </span>

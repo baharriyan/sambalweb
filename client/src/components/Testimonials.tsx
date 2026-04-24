@@ -49,9 +49,37 @@ export default function Testimonials() {
 
   if (isLoading) {
     return (
-      <div className="py-20 flex justify-center">
-        <Loader2 className="w-8 h-8 animate-spin text-red-600" />
-      </div>
+      <section className="py-20 px-4 bg-white">
+        <div className="max-w-7xl mx-auto">
+          <div className="text-center mb-16">
+            <div className="h-12 w-80 mx-auto bg-gradient-to-r from-slate-200 via-slate-100 to-slate-200 rounded-lg animate-shimmer mb-4" />
+            <div className="h-6 w-96 mx-auto bg-gradient-to-r from-slate-200 via-slate-100 to-slate-200 rounded animate-shimmer" />
+          </div>
+          <div className="grid md:grid-cols-3 gap-8">
+            {[...Array(3)].map((_, i) => (
+              <div key={i} className="bg-gradient-to-br from-red-50 to-orange-50 rounded-2xl p-8 border border-red-100">
+                <div className="flex gap-1 mb-4">
+                  {[...Array(5)].map((_, j) => (
+                    <div key={j} className="w-5 h-5 bg-slate-200 rounded" />
+                  ))}
+                </div>
+                <div className="space-y-2 mb-6">
+                  <div className="h-4 w-full bg-slate-200 rounded animate-shimmer bg-gradient-to-r from-slate-200 via-slate-100 to-slate-200" />
+                  <div className="h-4 w-5/6 bg-slate-200 rounded animate-shimmer bg-gradient-to-r from-slate-200 via-slate-100 to-slate-200" />
+                  <div className="h-4 w-3/4 bg-slate-200 rounded animate-shimmer bg-gradient-to-r from-slate-200 via-slate-100 to-slate-200" />
+                </div>
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 bg-slate-200 rounded-full" />
+                  <div>
+                    <div className="h-4 w-24 bg-slate-200 rounded mb-1" />
+                    <div className="h-3 w-16 bg-slate-100 rounded" />
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
     );
   }
 

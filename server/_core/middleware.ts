@@ -34,11 +34,11 @@ export function securityHeaders(
     "Content-Security-Policy",
     [
       "default-src 'self'",
-      "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.jsdelivr.net",
-      "style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net",
-      "img-src 'self' data: https:",
-      "font-src 'self' data: https://cdn.jsdelivr.net",
-      "connect-src 'self' https:",
+      "script-src 'self' 'unsafe-inline' 'unsafe-eval' blob: https://cdn.jsdelivr.net",
+      "style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://fonts.googleapis.com",
+      "img-src 'self' data: https: blob:",
+      "font-src 'self' data: https://cdn.jsdelivr.net https://fonts.gstatic.com",
+      "connect-src 'self' https: ws: wss:",
       "frame-ancestors 'self'",
       "base-uri 'self'",
       "form-action 'self'",
@@ -54,13 +54,23 @@ export function securityHeaders(
     "geolocation=(), microphone=(), camera=(), payment=(), usb=(), magnetometer=(), gyroscope=(), accelerometer=()"
   );
 
-  // Disable caching untuk halaman dynamic
-  res.setHeader(
-    "Cache-Control",
-    "no-store, no-cache, must-revalidate, proxy-revalidate"
-  );
-  res.setHeader("Pragma", "no-cache");
-  res.setHeader("Expires", "0");
+  // Smart caching: static assets get cached, dynamic content does not
+  const isStaticAsset = /\.(js|css|png|jpg|jpeg|gif|svg|ico|webp|avif|woff|woff2|ttf|eot|br|gz)$/i.test(req.path)
+    || req.path.startsWith("/attached_assets/")
+    || req.path.startsWith("/uploads/");
+
+  if (isStaticAsset) {
+    // Static assets: cache for 1 year (immutable for hashed files)
+    res.setHeader("Cache-Control", "public, max-age=31536000, immutable");
+  } else {
+    // Dynamic content (HTML, API responses): no cache
+    res.setHeader(
+      "Cache-Control",
+      "no-store, no-cache, must-revalidate, proxy-revalidate"
+    );
+    res.setHeader("Pragma", "no-cache");
+    res.setHeader("Expires", "0");
+  }
 
   next();
 }
@@ -153,7 +163,11 @@ export function validateCSRFToken(
   }
 
   // Skip validasi untuk API routes yang tidak perlu (misal public endpoints)
-  const publicEndpoints = ["/api/auth/callback", "/api/auth/logout"];
+  const publicEndpoints = [
+    "/api/auth/callback",
+    "/api/auth/logout",
+    "/api/payments/webhook",
+  ];
   if (publicEndpoints.some(endpoint => req.path.startsWith(endpoint))) {
     return next();
   }

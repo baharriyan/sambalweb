@@ -66,9 +66,21 @@ export default function FAQ() {
 
   if (isLoading) {
     return (
-      <div className="py-20 flex justify-center">
-        <Loader2 className="w-8 h-8 animate-spin text-red-600" />
-      </div>
+      <section id="faq" className="py-20 px-4 bg-gradient-to-b from-white to-gray-50">
+        <div className="max-w-4xl mx-auto">
+          <div className="text-center mb-16">
+            <div className="h-12 w-64 mx-auto bg-gradient-to-r from-slate-200 via-slate-100 to-slate-200 rounded-lg animate-shimmer mb-4" />
+            <div className="h-6 w-80 mx-auto bg-gradient-to-r from-slate-200 via-slate-100 to-slate-200 rounded animate-shimmer" />
+          </div>
+          <div className="space-y-4">
+            {[...Array(4)].map((_, i) => (
+              <div key={i} className="bg-white border border-gray-200 rounded-lg px-6 py-4">
+                <div className="h-6 w-3/4 bg-gradient-to-r from-slate-200 via-slate-100 to-slate-200 rounded animate-shimmer" />
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
     );
   }
 

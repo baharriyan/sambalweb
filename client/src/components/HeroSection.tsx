@@ -1,6 +1,6 @@
 import { Link } from "wouter";
 import { Button } from "@/components/ui/button";
-import { ChevronRight, ShieldCheck, Flame, Loader2 } from "lucide-react";
+import { ChevronRight, ShieldCheck, Flame } from "lucide-react";
 import { trpc } from "@/lib/trpc";
 
 import OptimizedImage from "./OptimizedImage";
@@ -21,14 +21,7 @@ export default function HeroSection() {
     imageUrl: heroContent?.imageUrl || "/attached_assets/hero.png",
   };
 
-  if (isLoading) {
-    return (
-      <div className="min-h-[90vh] flex items-center justify-center">
-        <Loader2 className="w-8 h-8 animate-spin text-red-600" />
-      </div>
-    );
-  }
-
+  // Use skeleton layout instead of spinner for better perceived performance
   return (
     <section className="relative min-h-[90vh] flex items-center pt-20 pb-16 px-4 bg-[#faf9f6] overflow-hidden">
       {/* Background Decorative Gradients */}
@@ -39,46 +32,61 @@ export default function HeroSection() {
         <div className="grid lg:grid-cols-2 gap-12 items-center">
           {/* Left Content */}
           <div className="space-y-8 relative z-10 text-center lg:text-left animate-fade-in-up">
-            <div>
-              <div className="inline-flex items-center gap-2 px-4 py-2 bg-red-50 text-red-600 rounded-full mb-6 border border-red-100">
-                <Flame className="w-4 h-4" />
-                <span className="text-xs font-bold uppercase tracking-widest">
-                  {content.badge}
-                </span>
+            {isLoading ? (
+              /* Skeleton placeholders for text content */
+              <div className="space-y-6">
+                <div className="h-8 w-64 bg-slate-200 rounded-full animate-shimmer mx-auto lg:mx-0 bg-gradient-to-r from-slate-200 via-slate-100 to-slate-200" />
+                <div className="space-y-3">
+                  <div className="h-16 w-full max-w-lg bg-slate-200 rounded-lg animate-shimmer bg-gradient-to-r from-slate-200 via-slate-100 to-slate-200" />
+                  <div className="h-16 w-3/4 bg-slate-200 rounded-lg animate-shimmer bg-gradient-to-r from-slate-200 via-slate-100 to-slate-200" />
+                </div>
+                <div className="h-6 w-full max-w-xl bg-slate-200 rounded animate-shimmer mx-auto lg:mx-0 bg-gradient-to-r from-slate-200 via-slate-100 to-slate-200" />
+                <div className="h-14 w-48 bg-slate-200 rounded-full animate-shimmer mx-auto lg:mx-0 bg-gradient-to-r from-slate-200 via-slate-100 to-slate-200" />
               </div>
+            ) : (
+              <div>
+                <div className="inline-flex items-center gap-2 px-4 py-2 bg-red-50 text-red-600 rounded-full mb-6 border border-red-100">
+                  <Flame className="w-4 h-4" />
+                  <span className="text-xs font-bold uppercase tracking-widest">
+                    {content.badge}
+                  </span>
+                </div>
 
-              <h1
-                className="text-6xl md:text-7xl lg:text-8xl font-black text-slate-900 leading-[0.9] tracking-tighter mb-6"
-                dangerouslySetInnerHTML={{ __html: content.title }}
-              />
+                <h1
+                  className="text-6xl md:text-7xl lg:text-8xl font-black text-slate-900 leading-[0.9] tracking-tighter mb-6"
+                  dangerouslySetInnerHTML={{ __html: content.title }}
+                />
 
-              <p className="text-lg md:text-xl text-slate-600 max-w-xl mx-auto lg:mx-0 leading-relaxed">
-                {content.description}
-              </p>
-            </div>
+                <p className="text-lg md:text-xl text-slate-600 max-w-xl mx-auto lg:mx-0 leading-relaxed">
+                  {content.description}
+                </p>
+              </div>
+            )}
 
-            <div
-              className="flex flex-col sm:flex-row items-center justify-center lg:justify-start gap-4 pt-4 animate-fade-in-up"
-              style={{ animationDelay: "0.2s" }}
-            >
-              <Link href="/catalog">
+            {!isLoading && (
+              <div
+                className="flex flex-col sm:flex-row items-center justify-center lg:justify-start gap-4 pt-4 animate-fade-in-up"
+                style={{ animationDelay: "0.2s" }}
+              >
                 <Button
                   size="lg"
                   className="bg-slate-900 hover:bg-slate-800 text-white rounded-full px-10 h-14 text-lg font-bold transition-all hover:scale-105 shadow-xl shadow-slate-200"
+                  asChild
                 >
-                  Lihat Menu <ChevronRight className="ml-2 w-5 h-5" />
+                  <Link href="/catalog">
+                    Lihat Menu <ChevronRight className="ml-2 w-5 h-5" />
+                  </Link>
                 </Button>
-              </Link>
-              <a href="#how-to-order">
                 <Button
                   variant="ghost"
                   size="lg"
                   className="text-slate-600 font-bold hover:text-red-600 transition-colors"
+                  asChild
                 >
-                  Cara Pesan
+                  <a href="#how-to-order">Cara Pesan</a>
                 </Button>
-              </a>
-            </div>
+              </div>
+            )}
           </div>
 
           {/* Right Image Content */}
@@ -89,6 +97,7 @@ export default function HeroSection() {
                 alt="Sambal Premium"
                 className="w-full aspect-square object-cover"
                 priority
+                sizes="(max-width: 1024px) 100vw, 50vw"
               />
               <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent" />
             </div>
@@ -126,5 +135,3 @@ export default function HeroSection() {
     </section>
   );
 }
-
-

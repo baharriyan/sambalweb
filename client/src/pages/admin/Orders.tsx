@@ -16,6 +16,8 @@ import {
   XCircle,
   CreditCard,
   Search,
+  RefreshCcw,
+  ExternalLink,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { motion, AnimatePresence } from "framer-motion";
@@ -69,6 +71,10 @@ export default function AdminOrders() {
     error,
   } = trpc.orders.getAllOrders.useQuery({ limit: 100, offset: 0 });
   const updateStatusMutation = trpc.orders.updateStatus.useMutation();
+  const syncPaymentsMutation = trpc.orders.syncAllPayments.useMutation();
+  const checkOnePaymentMutation = trpc.orders.checkPaymentStatus.useMutation();
+
+  const [isSyncing, setIsSyncing] = useState(false);
 
   useEffect(() => {
     if (!loading && (!user || user.role !== "admin")) {
@@ -78,11 +84,12 @@ export default function AdminOrders() {
 
   if (loading || !user || user.role !== "admin") return null;
 
-  const handleUpdateStatus = async (orderId: number, newStatus: string) => {
+  const handleUpdateStatus = async (orderId: number, newStatus: string, trackingNumber?: string) => {
     try {
       await updateStatusMutation.mutateAsync({
         orderId,
         status: newStatus as OrderStatus,
+        trackingNumber,
       });
       toast.success("Status pesanan berhasil diperbarui");
       refetch();
@@ -103,6 +110,33 @@ export default function AdminOrders() {
       : true;
     return matchesStatus && matchesSearch;
   });
+
+  const handleSyncAll = async () => {
+    setIsSyncing(true);
+    try {
+      await syncPaymentsMutation.mutateAsync();
+      toast.success("Sinkronisasi pembayaran berhasil");
+      refetch();
+    } catch (err) {
+      toast.error("Gagal sinkronisasi pembayaran");
+    } finally {
+      setIsSyncing(false);
+    }
+  };
+
+  const handleCheckPayment = async (orderId: number) => {
+    try {
+      const result = await checkOnePaymentMutation.mutateAsync({ orderId });
+      if (result.paid) {
+        toast.success("Pembayaran terverifikasi!");
+      } else {
+        toast.info(`Status pembayaran: ${result.status}`);
+      }
+      refetch();
+    } catch {
+      toast.error("Gagal memeriksa pembayaran");
+    }
+  };
 
   return (
     <AdminLayout title="Manajemen Pesanan">
@@ -139,15 +173,29 @@ export default function AdminOrders() {
             ))}
           </div>
 
-          <div className="relative w-full md:w-80">
-            <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-            <input
-              type="text"
-              placeholder="Cari Order ID atau Pelanggan..."
-              value={searchQuery}
-              onChange={e => setSearchQuery(e.target.value)}
-              className="w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-red-500/20 text-sm"
-            />
+          <div className="flex gap-2 w-full md:w-auto">
+            <Button
+              variant="outline"
+              onClick={handleSyncAll}
+              disabled={isSyncing}
+              className="rounded-xl border-slate-200 text-slate-600 hover:bg-slate-50 flex-1 md:flex-none"
+            >
+              <RefreshCcw
+                className={cn("w-4 h-4 mr-2", isSyncing && "animate-spin")}
+              />
+              {isSyncing ? "Sinkronisasi..." : "Sinkronisasi Pembayaran"}
+            </Button>
+
+            <div className="relative flex-1 md:w-80">
+              <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+              <input
+                type="text"
+                placeholder="Cari Order ID atau Pelanggan..."
+                value={searchQuery}
+                onChange={e => setSearchQuery(e.target.value)}
+                className="w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-red-500/20 text-sm"
+              />
+            </div>
           </div>
         </div>
 
@@ -252,6 +300,19 @@ export default function AdminOrders() {
                               {order.shippingCourier}
                             </p>
                           </div>
+                          <div className="hidden lg:block">
+                            <p className="text-[10px] uppercase font-bold text-slate-400 tracking-wider mb-0.5">
+                              Metode Bayar
+                            </p>
+                            <span className={cn(
+                              "text-[10px] px-2 py-0.5 rounded-full font-bold uppercase",
+                              order.paymentMethod === "TRANSFER_BANK" 
+                                ? "bg-amber-100 text-amber-700" 
+                                : "bg-blue-100 text-blue-700"
+                            )}>
+                              {order.paymentMethod === "TRANSFER_BANK" ? "Manual" : "Otomatis"}
+                            </span>
+                          </div>
                         </div>
 
                         <div className="flex items-center gap-3 self-end md:self-auto">
@@ -263,6 +324,21 @@ export default function AdminOrders() {
                           >
                             {config.label.toUpperCase()}
                           </div>
+                          {order.status === "PENDING_PAYMENT" &&
+                            order.paymentMethod === "MIDTRANS" && (
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                onClick={e => {
+                                  e.stopPropagation();
+                                  handleCheckPayment(order.id);
+                                }}
+                                className="h-8 w-8 p-0 text-slate-400 hover:text-blue-600"
+                                title="Cek Status Pembayaran"
+                              >
+                                <RefreshCcw className="w-4 h-4" />
+                              </Button>
+                            )}
                           {isExpanded ? (
                             <ChevronUp className="w-5 h-5 text-slate-300" />
                           ) : (
@@ -292,6 +368,70 @@ export default function AdminOrders() {
                                     {order.customerPhone}
                                   </p>
                                 </div>
+                                {order.paymentMethod === "TRANSFER_BANK" ? (
+                                  order.paymentProofUrl && (
+                                    <div className="pt-2 border-t border-slate-100">
+                                      <h4 className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2">
+                                        Bukti Pembayaran (Manual)
+                                      </h4>
+                                      <div className="relative group overflow-hidden rounded-xl border border-slate-200">
+                                        <img 
+                                          src={order.paymentProofUrl} 
+                                          alt="Bukti" 
+                                          className="w-full h-48 object-cover cursor-zoom-in hover:scale-105 transition-transform duration-300"
+                                          onClick={() => window.open(order.paymentProofUrl || "", '_blank')}
+                                        />
+                                        <div className="absolute top-2 right-2 bg-black/60 text-white p-1.5 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity">
+                                          <ExternalLink className="w-4 h-4" />
+                                        </div>
+                                        {order.status === "PENDING_PAYMENT" && (
+                                          <div className="absolute bottom-0 left-0 right-0 p-3 bg-gradient-to-t from-black/90 to-transparent flex gap-2">
+                                            <Button
+                                              size="sm"
+                                              className="flex-1 bg-emerald-500 hover:bg-emerald-600 text-white font-black rounded-xl border-none shadow-lg"
+                                              onClick={() => {
+                                                if (confirm("Terima bukti bayar ini? Status akan berubah menjadi DIPROSES.")) {
+                                                  handleUpdateStatus(order.id, "PROCESSING");
+                                                  toast.success("Pembayaran diterima!");
+                                                }
+                                              }}
+                                            >
+                                              <CheckCircle2 className="w-4 h-4 mr-1.5" />
+                                              TERIMA
+                                            </Button>
+                                            <Button
+                                              size="sm"
+                                              variant="destructive"
+                                              className="flex-1 bg-red-600 hover:bg-red-700 text-white font-black rounded-xl border-none shadow-lg"
+                                              onClick={() => {
+                                                if (confirm("Tolak bukti bayar ini? Pesanan akan otomatis DIBATALKAN.")) {
+                                                  handleUpdateStatus(order.id, "CANCELLED");
+                                                  toast.error("Pesanan dibatalkan");
+                                                }
+                                              }}
+                                            >
+                                              <XCircle className="w-4 h-4 mr-1.5" />
+                                              TOLAK
+                                            </Button>
+                                          </div>
+                                        )}
+                                      </div>
+                                    </div>
+                                  )
+                                ) : (
+                                  <div className="pt-2 border-t border-slate-100">
+                                    <h4 className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2">
+                                      Sistem Pembayaran
+                                    </h4>
+                                    <div className="bg-blue-50 border border-blue-100 p-3 rounded-xl flex items-center gap-3">
+                                      <CreditCard className="w-5 h-5 text-blue-500" />
+                                      <div>
+                                        <p className="text-xs font-bold text-blue-900 uppercase">Otomatis</p>
+                                        <p className="text-[10px] text-blue-600">Terverifikasi oleh sistem</p>
+                                      </div>
+                                    </div>
+                                  </div>
+                                )}
                                 <div>
                                   <h4 className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2">
                                     Catatan Pesanan
@@ -316,34 +456,64 @@ export default function AdminOrders() {
                                 </div>
                               </div>
 
-                              <div className="bg-white p-6 rounded-2xl border border-slate-100 shadow-sm flex flex-col justify-between">
-                                <h4 className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-4 text-center">
-                                  Ganti Status Pesanan
-                                </h4>
-                                <div className="grid grid-cols-1 gap-2">
-                                  <select
-                                    value={order.status}
-                                    onChange={e =>
-                                      handleUpdateStatus(
-                                        order.id,
-                                        e.target.value
-                                      )
-                                    }
-                                    className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-red-500/20 text-sm font-bold appearance-none cursor-pointer text-center"
-                                  >
-                                    {Object.entries(statusConfig).map(
-                                      ([status, cfg]) => (
-                                        <option key={status} value={status}>
-                                          {cfg.label.toUpperCase()}
-                                        </option>
-                                      )
+                                <div className="bg-white p-6 rounded-2xl border border-slate-100 shadow-sm flex flex-col justify-between h-full">
+                                  <h4 className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-4 text-center">
+                                    Manajemen Status & Resi
+                                  </h4>
+                                  <div className="space-y-3">
+                                    <div className="relative">
+                                      <select
+                                        value={order.status}
+                                        onChange={e =>
+                                          handleUpdateStatus(
+                                            order.id,
+                                            e.target.value
+                                          )
+                                        }
+                                        className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-red-500/20 text-sm font-bold appearance-none cursor-pointer text-center"
+                                      >
+                                        {Object.entries(statusConfig).map(
+                                          ([status, cfg]) => (
+                                            <option key={status} value={status}>
+                                              {cfg.label.toUpperCase()}
+                                            </option>
+                                          )
+                                        )}
+                                      </select>
+                                      <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" />
+                                    </div>
+
+                                    {(order.status === "SHIPPED" || order.status === "COMPLETED") && (
+                                      <div className="space-y-2 pt-2 border-t border-slate-100">
+                                        <label className="text-[10px] font-bold text-slate-400 uppercase text-center block">
+                                          Nomor Resi
+                                        </label>
+                                        <div className="flex gap-2">
+                                          <input
+                                            type="text"
+                                            placeholder="Input No. Resi..."
+                                            defaultValue={order.trackingNumber || ""}
+                                            id={`resi-${order.id}`}
+                                            className="flex-1 px-3 py-2 bg-white border border-slate-200 rounded-xl text-xs focus:ring-2 focus:ring-red-500/20 outline-none"
+                                          />
+                                          <Button
+                                            size="sm"
+                                            onClick={() => {
+                                              const resi = (document.getElementById(`resi-${order.id}`) as HTMLInputElement).value;
+                                              handleUpdateStatus(order.id, order.status, resi);
+                                            }}
+                                            className="bg-red-600 hover:bg-red-700 text-white rounded-xl h-9 px-3"
+                                          >
+                                            Simpan
+                                          </Button>
+                                        </div>
+                                      </div>
                                     )}
-                                  </select>
-                                  <p className="text-[9px] text-center text-slate-400 italic mt-2">
-                                    * Status akan langsung berubah saat dipilih
-                                  </p>
+                                    <p className="text-[9px] text-center text-slate-400 italic mt-2">
+                                      * Status akan langsung berubah saat dipilih
+                                    </p>
+                                  </div>
                                 </div>
-                              </div>
                             </div>
                           </motion.div>
                         )}

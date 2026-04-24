@@ -111,6 +111,8 @@ function Router() {
 }
 Router.displayName = "Router";
 
+import ScrollHandler from "./components/ScrollHandler";
+
 function App() {
   return (
     <ErrorBoundary>
@@ -118,6 +120,7 @@ function App() {
         <CartProvider>
           <TooltipProvider>
             <Toaster />
+            <ScrollHandler />
             <Router />
           </TooltipProvider>
         </CartProvider>

@@ -63,6 +63,10 @@ export async function createMidtransTransaction(orderData: {
     credit_card: {
       secure: true,
     },
+    expiry: {
+      unit: "minutes",
+      duration: 20,
+    },
     usage_limit: 1,
   };
 

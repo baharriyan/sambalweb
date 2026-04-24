@@ -15,6 +15,7 @@ import { TRPCError } from "@trpc/server";
 import { sdk } from "./_core/sdk";
 import { notifyOwner } from "./_core/notification";
 import { createMidtransTransaction, getTransactionStatus } from "./midtrans";
+import { syncPendingOrdersWithMidtrans } from "./payment-sync";
 
 // Helper to exclude sensitive fields from user response
 function sanitizeUser(user: db.User) {
@@ -709,6 +710,7 @@ export const appRouter = router({
             total,
             status: "PENDING_PAYMENT",
             notes: input.notes || null,
+            trackingNumber: null,
           });
 
           const orderIdResult =
@@ -766,7 +768,7 @@ export const appRouter = router({
       }),
 
     uploadPaymentProof: publicProcedure
-      .input(z.object({ orderId: z.number(), imageUrl: z.string().url() }))
+      .input(z.object({ orderId: z.number(), imageUrl: z.string() }))
       .mutation(async ({ ctx, input }) => {
         const order = await db.getOrderById(input.orderId);
         if (!order) {
@@ -816,6 +818,20 @@ export const appRouter = router({
           throw new TRPCError({
             code: "NOT_FOUND",
             message: "Pesanan tidak ditemukan",
+          });
+        }
+
+        // PREVENT DUPLICATE PAYMENT
+        // If order is already paid, shipped, or completed, block new payment requests
+        if (order.status !== "PENDING_PAYMENT") {
+          let message = "Pesanan ini sudah dibayar atau sedang diproses.";
+          if (order.status === "CANCELLED") {
+            message = "Pesanan ini sudah dibatalkan dan tidak dapat dibayar.";
+          }
+          
+          throw new TRPCError({
+            code: "BAD_REQUEST",
+            message: message,
           });
         }
 
@@ -928,10 +944,11 @@ export const appRouter = router({
             "COMPLETED",
             "CANCELLED",
           ]),
+          trackingNumber: z.string().optional(),
         })
       )
       .mutation(async ({ input }) => {
-        return db.updateOrderStatus(input.orderId, input.status);
+        return db.updateOrderStatus(input.orderId, input.status, input.trackingNumber);
       }),
 
     orderAgain: protectedProcedure
@@ -1038,6 +1055,11 @@ export const appRouter = router({
         await db.deleteOrder(order.id);
         return { success: true };
       }),
+    
+    syncAllPayments: adminProcedure.mutation(async () => {
+      await syncPendingOrdersWithMidtrans();
+      return { success: true };
+    }),
   }),
 
   // Address routes

@@ -84,6 +84,7 @@ export const orders = mysqlTable("orders", {
 	total: int().notNull(),
 	status: mysqlEnum(['PENDING_PAYMENT','PROCESSING','SHIPPED','COMPLETED','CANCELLED']).default('PENDING_PAYMENT').notNull(),
 	notes: text(),
+	trackingNumber: varchar({ length: 100 }),
 	createdAt: timestamp({ mode: 'date' }).default(sql`(now())`).notNull(),
 	updatedAt: timestamp({ mode: 'date' }).default(sql`(now())`).onUpdateNow().notNull(),
 },

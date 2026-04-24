@@ -101,17 +101,17 @@ export function MiniCartDrawer({ isOpen, onClose }: MiniCartDrawerProps) {
 
   return (
     <Drawer open={isOpen} onOpenChange={onClose}>
-      <DrawerContent className="h-full md:h-screen md:max-h-screen md:w-96 md:rounded-l-lg md:rounded-r-none">
+      <DrawerContent className="h-full md:h-screen md:max-h-screen md:w-96 md:rounded-l-3xl md:rounded-r-none bg-[#faf9f6] border-l border-slate-200 shadow-2xl">
         {/* Header */}
         <DrawerHeader className="border-b">
           <div className="flex items-center justify-between">
-            <DrawerTitle className="flex items-center gap-2">
-              <ShoppingCart className="h-5 w-5" />
+            <DrawerTitle className="flex items-center gap-2 text-slate-900 font-bold">
+              <ShoppingCart className="h-5 w-5 text-red-600" />
               Keranjang ({totalItems})
             </DrawerTitle>
             <DrawerClose asChild>
-              <button className="p-1 hover:bg-secondary rounded-md">
-                <X className="h-5 w-5" />
+              <button className="p-1 hover:bg-slate-100 rounded-md transition-colors">
+                <X className="h-5 w-5 text-slate-400" />
               </button>
             </DrawerClose>
           </div>
@@ -128,7 +128,9 @@ export function MiniCartDrawer({ isOpen, onClose }: MiniCartDrawerProps) {
             </p>
             <DrawerClose asChild>
               <Button
-                className="w-full"
+                className="w-full border-2 border-slate-100 text-slate-600 hover:bg-slate-50 rounded-2xl h-14 font-bold transition-all"
+                variant="outline"
+                size="lg"
                 onClick={() => {
                   onClose();
                   navigate("/catalog");
@@ -146,7 +148,7 @@ export function MiniCartDrawer({ isOpen, onClose }: MiniCartDrawerProps) {
                 {items.map(item => (
                   <div
                     key={item.localId || item.id}
-                    className="flex gap-3 border rounded-lg p-3"
+                    className="flex gap-4 bg-white border border-slate-100 rounded-2xl p-4 shadow-sm hover:shadow-md transition-all duration-300 group"
                   >
                     {/* Product Image */}
                     {item.imageUrl && (
@@ -160,38 +162,38 @@ export function MiniCartDrawer({ isOpen, onClose }: MiniCartDrawerProps) {
 
                     {/* Product Info */}
                     <div className="flex-1 min-w-0">
-                      <h4 className="text-sm font-medium truncate">
+                      <h4 className="text-sm font-bold text-slate-900 truncate">
                         {item.productName}
                       </h4>
-                      <p className="text-sm text-muted-foreground">
+                      <p className="text-sm font-medium text-slate-600">
                         Rp{item.price.toLocaleString("id-ID")}
                       </p>
 
                       {/* Quantity Controls */}
                       <div className="flex items-center gap-1 mt-2">
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          className="h-7 w-7 p-0"
-                          onClick={() =>
-                            handleDecrement(
-                              item.localId || item.id,
-                              item.quantity
-                            )
-                          }
-                          disabled={isProcessing}
-                        >
-                          <Minus className="h-3 w-3" />
-                        </Button>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className="h-7 w-7 p-0 border-slate-300 text-slate-900"
+                            onClick={() =>
+                              handleDecrement(
+                                item.localId || item.id,
+                                item.quantity
+                              )
+                            }
+                            disabled={isProcessing}
+                          >
+                            <Minus className="h-3 w-3 stroke-[3]" />
+                          </Button>
 
-                        <span className="w-6 text-center text-sm font-medium">
+                        <span className="w-6 text-center text-sm font-black text-slate-900">
                           {item.quantity}
                         </span>
 
                         <Button
                           size="sm"
                           variant="outline"
-                          className="h-7 w-7 p-0"
+                          className="h-7 w-7 p-0 border-slate-300 text-slate-900"
                           onClick={() =>
                             handleIncrement(
                               item.localId || item.id,
@@ -200,27 +202,26 @@ export function MiniCartDrawer({ isOpen, onClose }: MiniCartDrawerProps) {
                           }
                           disabled={isProcessing}
                         >
-                          <Plus className="h-3 w-3" />
+                          <Plus className="h-3 w-3 stroke-[3]" />
                         </Button>
 
                         {/* Remove Button */}
                         <Button
                           size="sm"
                           variant="ghost"
-                          className="h-7 w-7 p-0 ml-auto text-destructive hover:text-destructive hover:bg-destructive/10"
+                          className="h-7 w-7 p-0 ml-auto text-red-600 hover:text-red-700 hover:bg-red-50"
                           onClick={() =>
                             handleRemoveItem(item.localId || item.id)
                           }
                           disabled={isProcessing}
                         >
-                          <Trash2 className="h-3 w-3" />
+                          <Trash2 className="h-3 w-3 stroke-[2.5]" />
                         </Button>
                       </div>
 
                       {/* Subtotal */}
-                      <p className="text-xs text-muted-foreground mt-2">
-                        Subtotal: Rp
-                        {(item.price * item.quantity).toLocaleString("id-ID")}
+                      <p className="text-xs font-bold text-slate-400 mt-2 uppercase tracking-tight">
+                        Subtotal: <span className="text-slate-900">Rp{(item.price * item.quantity).toLocaleString("id-ID")}</span>
                       </p>
                     </div>
                   </div>
@@ -234,22 +235,22 @@ export function MiniCartDrawer({ isOpen, onClose }: MiniCartDrawerProps) {
             {/* Footer with Total and Actions */}
             <div className="p-4 space-y-4">
               {/* Total Price */}
-              <div className="bg-secondary rounded-lg p-3">
+              <div className="bg-white border border-slate-100 rounded-2xl p-4 shadow-sm">
                 <div className="flex justify-between items-center">
-                  <span className="text-sm text-muted-foreground">Total:</span>
-                  <span className="text-lg font-bold">
+                  <span className="text-sm font-bold text-slate-400 uppercase tracking-widest">Total</span>
+                  <span className="text-2xl font-black text-red-600">
                     Rp{totalPrice.toLocaleString("id-ID")}
                   </span>
                 </div>
-                <p className="text-xs text-muted-foreground mt-1">
-                  ({totalItems} item{totalItems !== 1 ? "s" : ""})
+                <p className="text-[10px] font-bold text-slate-400 mt-1 uppercase tracking-wider">
+                  {totalItems} item{totalItems !== 1 ? "s" : ""} terpilih
                 </p>
               </div>
 
               {/* Action Buttons */}
               <div className="space-y-2">
                 <Button
-                  className="w-full"
+                  className="w-full bg-red-600 hover:bg-red-700 text-white rounded-2xl h-14 font-bold text-lg shadow-xl shadow-red-100 transition-all active:scale-95"
                   size="lg"
                   onClick={handleCheckout}
                   disabled={isEmpty || isProcessing}
@@ -259,7 +260,7 @@ export function MiniCartDrawer({ isOpen, onClose }: MiniCartDrawerProps) {
 
                 <DrawerClose asChild>
                   <Button
-                    className="w-full"
+                    className="w-full border-2 border-slate-100 text-slate-600 hover:bg-slate-50 rounded-2xl h-14 font-bold transition-all"
                     variant="outline"
                     size="lg"
                     onClick={() => navigate("/catalog")}

@@ -48,9 +48,24 @@ export default function HowToOrder() {
 
   if (isLoading) {
     return (
-      <div className="py-20 flex justify-center">
-        <Loader2 className="w-8 h-8 animate-spin text-red-600" />
-      </div>
+      <section id="how-to-order" className="py-20 px-4 bg-gradient-to-b from-gray-50 to-white">
+        <div className="max-w-7xl mx-auto">
+          <div className="text-center mb-16">
+            <div className="h-12 w-64 mx-auto bg-gradient-to-r from-slate-200 via-slate-100 to-slate-200 rounded-lg animate-shimmer mb-4" />
+            <div className="h-6 w-96 mx-auto bg-gradient-to-r from-slate-200 via-slate-100 to-slate-200 rounded animate-shimmer" />
+          </div>
+          <div className="grid md:grid-cols-3 gap-8">
+            {[...Array(3)].map((_, i) => (
+              <div key={i} className="bg-white rounded-2xl p-8 shadow-lg">
+                <div className="w-16 h-16 bg-slate-200 rounded-full mx-auto mb-6 animate-shimmer bg-gradient-to-r from-slate-200 via-slate-100 to-slate-200" />
+                <div className="h-8 w-3/4 mx-auto bg-slate-200 rounded mb-3 animate-shimmer bg-gradient-to-r from-slate-200 via-slate-100 to-slate-200" />
+                <div className="h-4 w-full bg-slate-100 rounded mb-2 animate-shimmer bg-gradient-to-r from-slate-200 via-slate-100 to-slate-200" />
+                <div className="h-4 w-2/3 mx-auto bg-slate-100 rounded animate-shimmer bg-gradient-to-r from-slate-200 via-slate-100 to-slate-200" />
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
     );
   }
 

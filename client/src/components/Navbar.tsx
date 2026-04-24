@@ -23,10 +23,17 @@ export default function Navbar() {
   const { getTotalItems } = useCart();
 
   useEffect(() => {
+    let ticking = false;
     const handleScroll = () => {
-      setIsScrolled(window.scrollY > 0);
+      if (!ticking) {
+        requestAnimationFrame(() => {
+          setIsScrolled(window.scrollY > 0);
+          ticking = false;
+        });
+        ticking = true;
+      }
     };
-    window.addEventListener("scroll", handleScroll);
+    window.addEventListener("scroll", handleScroll, { passive: true });
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
@@ -79,24 +86,25 @@ export default function Navbar() {
                     {item.label}
                   </a>
                 ) : (
-                  <Link key={item.href} href={item.href}>
-                    <a
-                      className={`px-3 py-2 rounded-md text-sm font-medium transition-colors ${
-                        isActive(item.href)
-                          ? "bg-red-100 text-red-900"
-                          : "text-gray-700 hover:bg-gray-100"
-                      }`}
-                    >
-                      {item.label}
-                    </a>
+                  <Link
+                    key={item.href}
+                    href={item.href}
+                    className={`px-3 py-2 rounded-md text-sm font-medium transition-colors ${
+                      isActive(item.href)
+                        ? "bg-red-100 text-red-900"
+                        : "text-gray-700 hover:bg-gray-100"
+                    }`}
+                  >
+                    {item.label}
                   </Link>
                 )
               )}
               {user && (
-                <Link href="/dashboard">
-                  <a className="px-3 py-2 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-100">
-                    Dashboard
-                  </a>
+                <Link
+                  href="/dashboard"
+                  className="px-3 py-2 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-100"
+                >
+                  Dashboard
                 </Link>
               )}
             </div>
@@ -119,16 +127,16 @@ export default function Navbar() {
               {/* Auth Buttons */}
               {!user ? (
                 <div className="hidden sm:flex space-x-2">
-                  <Link href="/login">
-                    <Button variant="outline" size="sm">
-                      Masuk
-                    </Button>
-                  </Link>
-                  <Link href="/register">
-                    <Button size="sm" className="bg-red-600 hover:bg-red-700">
-                      Daftar
-                    </Button>
-                  </Link>
+                  <Button variant="outline" size="sm" className="border-slate-300 text-slate-900 font-bold hover:bg-slate-50 transition-all" asChild>
+                    <Link href="/login">Masuk</Link>
+                  </Button>
+                  <Button
+                    size="sm"
+                    className="bg-gradient-to-r from-red-600 to-orange-600 hover:from-red-700 hover:to-orange-700 text-white font-bold transition-all shadow-lg shadow-red-100 border-none px-6"
+                    asChild
+                  >
+                    <Link href="/register">Daftar</Link>
+                  </Button>
                 </div>
               ) : (
                 <div className="flex items-center space-x-3">
@@ -146,9 +154,9 @@ export default function Navbar() {
                         <Button
                           variant="outline"
                           size="sm"
-                          className="hidden sm:flex"
+                          className="hidden sm:flex text-slate-900 font-bold border-slate-200 bg-white hover:bg-slate-50 shadow-sm"
                         >
-                          <Settings className="w-4 h-4 mr-1" />
+                          <Settings className="w-4 h-4 mr-1 text-slate-600" />
                           Admin
                         </Button>
                       </Link>
@@ -158,9 +166,9 @@ export default function Navbar() {
                         <Button
                           variant="outline"
                           size="sm"
-                          className="hidden sm:flex"
+                          className="hidden sm:flex text-slate-900 font-bold border-slate-200 bg-white hover:bg-slate-50 shadow-sm"
                         >
-                          <User className="w-4 h-4 mr-1" />
+                          <User className="w-4 h-4 mr-1 text-slate-600" />
                           Profil
                         </Button>
                       </Link>
@@ -170,9 +178,9 @@ export default function Navbar() {
                         <Button
                           variant="outline"
                           size="sm"
-                          className="hidden sm:flex"
+                          className="hidden sm:flex text-slate-900 font-bold border-slate-200 bg-white hover:bg-slate-50 shadow-sm"
                         >
-                          <Heart className="w-4 h-4 mr-1 text-red-600" />
+                          <Heart className="w-4 h-4 mr-1 text-red-500 fill-red-50" />
                           Wishlist
                         </Button>
                       </Link>
@@ -182,8 +190,13 @@ export default function Navbar() {
                         user.role === "admin" ? "/rahasia/logout" : "/logout"
                       }
                     >
-                      <Button variant="ghost" size="sm">
-                        <LogOut className="w-4 h-4" />
+                      <Button 
+                        variant="outline" 
+                        size="sm"
+                        className="text-red-600 font-bold border-red-100 bg-red-50/50 hover:bg-red-100 shadow-sm"
+                      >
+                        <LogOut className="w-4 h-4 mr-1" />
+                        Log Out
                       </Button>
                     </Link>
                   </div>
@@ -223,25 +236,26 @@ export default function Navbar() {
                       {item.label}
                     </a>
                   ) : (
-                    <Link key={item.href} href={item.href}>
-                      <a
-                        className={`block px-3 py-2 rounded-md text-base font-medium ${
-                          isActive(item.href)
-                            ? "bg-red-100 text-red-900"
-                            : "text-gray-700 hover:bg-gray-100"
-                        }`}
-                        onClick={() => setIsMobileMenuOpen(false)}
-                      >
-                        {item.label}
-                      </a>
+                    <Link
+                      key={item.href}
+                      href={item.href}
+                      className={`block px-3 py-2 rounded-md text-base font-medium ${
+                        isActive(item.href)
+                          ? "bg-red-100 text-red-900"
+                          : "text-gray-700 hover:bg-gray-100"
+                      }`}
+                      onClick={() => setIsMobileMenuOpen(false)}
+                    >
+                      {item.label}
                     </Link>
                   )
                 )}
                 {user && (
-                  <Link href="/dashboard">
-                    <a className="block px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:bg-gray-100">
-                      Dashboard
-                    </a>
+                  <Link
+                    href="/dashboard"
+                    className="block px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:bg-gray-100"
+                  >
+                    Dashboard
                   </Link>
                 )}
                 {!user && (

@@ -371,11 +371,56 @@ export async function getOrdersByStatus(status: 'PENDING_PAYMENT' | 'PROCESSING'
     .limit(limit);
 }
 
-export async function updateOrderStatus(orderId: number, status: 'PENDING_PAYMENT' | 'PROCESSING' | 'SHIPPED' | 'COMPLETED' | 'CANCELLED') {
+export async function updateOrderStatus(orderId: number, status: 'PENDING_PAYMENT' | 'PROCESSING' | 'SHIPPED' | 'COMPLETED' | 'CANCELLED', trackingNumber?: string) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
   
-  return db.update(orders).set({ status }).where(eq(orders.id, orderId));
+  if (status === "CANCELLED") {
+    return await db.transaction(async (tx) => {
+      // 1. Get current order status and items
+      const order = await tx.select().from(orders).where(eq(orders.id, orderId)).limit(1);
+      if (order.length === 0 || order[0].status === "CANCELLED") return;
+
+      // 2. Update status
+      await tx.update(orders).set({ status }).where(eq(orders.id, orderId));
+
+      // 3. Restore stock
+      const items = await tx.select().from(orderItems).where(eq(orderItems.orderId, orderId));
+      for (const item of items) {
+        await tx.update(products)
+          .set({ stock: sql`${products.stock} + ${item.quantity}` })
+          .where(eq(products.id, item.productId));
+      }
+    });
+  }
+
+  return db.update(orders).set({ status, trackingNumber }).where(eq(orders.id, orderId));
+}
+
+export async function updateOrderStatusByNumber(orderNumber: string, status: 'PENDING_PAYMENT' | 'PROCESSING' | 'SHIPPED' | 'COMPLETED' | 'CANCELLED', trackingNumber?: string) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  
+  if (status === "CANCELLED") {
+    return await db.transaction(async (tx) => {
+      // 1. Get current order
+      const order = await tx.select().from(orders).where(eq(orders.orderNumber, orderNumber)).limit(1);
+      if (order.length === 0 || order[0].status === "CANCELLED") return;
+
+      // 2. Update status
+      await tx.update(orders).set({ status }).where(eq(orders.orderNumber, orderNumber));
+
+      // 3. Restore stock
+      const items = await tx.select().from(orderItems).where(eq(orderItems.orderId, order[0].id));
+      for (const item of items) {
+        await tx.update(products)
+          .set({ stock: sql`${products.stock} + ${item.quantity}` })
+          .where(eq(products.id, item.productId));
+      }
+    });
+  }
+
+  return db.update(orders).set({ status, trackingNumber }).where(eq(orders.orderNumber, orderNumber));
 }
 
 export async function createOrderItem(itemData: Omit<typeof orderItems.$inferInsert, 'id' | 'createdAt'>) {
@@ -383,6 +428,15 @@ export async function createOrderItem(itemData: Omit<typeof orderItems.$inferIns
   if (!db) throw new Error("Database not available");
   
   return db.insert(orderItems).values(itemData);
+}
+
+export async function updateOrderPaymentProof(orderId: number, imageUrl: string) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  
+  return db.update(orders)
+    .set({ paymentProofUrl: imageUrl })
+    .where(eq(orders.id, orderId));
 }
 
 export async function getOrderItems(orderId: number) {
@@ -663,15 +717,6 @@ export async function updateCouponUsage(couponId: number) {
   return db.update(coupons)
     .set({ usageCount: sql`${coupons.usageCount} + 1` })
     .where(eq(coupons.id, couponId));
-}
-
-export async function updateOrderPaymentProof(orderId: number, paymentProofUrl: string) {
-  const db = await getDb();
-  if (!db) throw new Error("Database not available");
-  
-  return db.update(orders)
-    .set({ paymentProofUrl, status: "PROCESSING" })
-    .where(eq(orders.id, orderId));
 }
 
 // Site Settings queries

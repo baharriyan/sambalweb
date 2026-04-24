@@ -14,6 +14,7 @@ import {
   MapPin,
   Trash2,
   Edit2,
+  Truck,
 } from "lucide-react";
 import { trpc, RouterOutputs } from "@/lib/trpc";
 import { toast } from "sonner";
@@ -238,11 +239,10 @@ export default function Dashboard() {
             </div>
             <Button
               onClick={handleLogout}
-              variant="outline"
-              className="border-2 border-red-600 text-red-600 hover:bg-red-50"
+              className="bg-red-600 hover:bg-red-700 text-white font-bold h-11 px-6 rounded-xl shadow-lg shadow-red-100 border-none"
             >
               <LogOut className="w-4 h-4 mr-2" />
-              Logout
+              Log Out
             </Button>
           </div>
 
@@ -312,7 +312,9 @@ export default function Dashboard() {
                                       ? "bg-blue-100 text-blue-800"
                                       : order.status === "PENDING_PAYMENT"
                                         ? "bg-yellow-100 text-yellow-800"
-                                        : "bg-gray-100 text-gray-800"
+                                        : order.status === "SHIPPED"
+                                          ? "bg-indigo-100 text-indigo-800"
+                                          : "bg-gray-100 text-gray-800"
                                 }`}
                               >
                                 {order.status === "COMPLETED"
@@ -328,40 +330,93 @@ export default function Dashboard() {
                             </div>
                           </div>
                         </div>
+
+                        {order.trackingNumber && (
+                          <div className="bg-indigo-50 border border-indigo-100 rounded-xl p-4 mb-4 flex justify-between items-center">
+                            <div>
+                              <p className="text-[10px] uppercase font-bold text-indigo-400 tracking-wider">Nomor Resi ({order.shippingCourier?.toUpperCase()})</p>
+                              <p className="text-lg font-black text-indigo-900 font-mono tracking-wider mt-0.5">{order.trackingNumber}</p>
+                            </div>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              className="border-indigo-200 text-indigo-600 hover:bg-indigo-100 font-bold"
+                              onClick={() => {
+                                navigator.clipboard.writeText(order.trackingNumber || "");
+                                toast.success("Nomor resi berhasil disalin");
+                              }}
+                            >
+                              Salin Resi
+                            </Button>
+                          </div>
+                        )}
+                        {order.paymentMethod === "TRANSFER_BANK" && order.status === "PENDING_PAYMENT" && (
+                          <div className="flex flex-wrap gap-2 mb-4">
+                            <Button
+                              onClick={() => {
+                                if (order.paymentProofUrl) {
+                                  window.open(order.paymentProofUrl, "_blank");
+                                } else {
+                                  navigate(
+                                    `/order-confirmation?orderId=${order.id}&orderNumber=${order.orderNumber}`
+                                  );
+                                }
+                              }}
+                              size="sm"
+                              variant="outline"
+                              className="border-blue-200 text-blue-600 hover:bg-blue-50 font-bold"
+                            >
+                              {order.paymentProofUrl ? "Lihat Bukti Bayar" : "Upload Bukti Transfer"}
+                            </Button>
+                          </div>
+                        )}
                         {order.status === "PENDING_PAYMENT" && (
-                          <Button
-                            onClick={() =>
-                              navigate(
-                                `/order-confirmation?orderId=${order.id}&orderNumber=${order.orderNumber}`
-                              )
-                            }
-                            size="sm"
-                            className="bg-red-600 hover:bg-red-700 mr-2"
-                          >
-                            Bayar Sekarang
-                          </Button>
+                          <div className="flex flex-wrap gap-2">
+                            <Button
+                              onClick={() =>
+                                navigate(
+                                  `/order-confirmation?orderId=${order.id}&orderNumber=${order.orderNumber}`
+                                )
+                              }
+                              size="sm"
+                              className="bg-red-600 hover:bg-red-700"
+                            >
+                              Bayar Sekarang
+                            </Button>
+                          </div>
                         )}
-                        {(order.status === "PENDING_PAYMENT" ||
-                          order.status === "PROCESSING") && (
-                          <Button
-                            onClick={() => handleCancelOrder(order.id)}
-                            size="sm"
-                            variant="outline"
-                            className="text-red-600 border-red-600 hover:bg-red-50 mr-2"
-                          >
-                            Batalkan Pesanan
-                          </Button>
-                        )}
-                        {order.status === "CANCELLED" && (
-                          <Button
-                            onClick={() => handleDeleteOrder(order.id)}
-                            size="sm"
-                            variant="outline"
-                            className="text-gray-500 border-gray-300 hover:bg-gray-50 mr-2"
-                          >
-                            Hapus Riwayat
-                          </Button>
-                        )}
+                        <div className="flex flex-wrap gap-2 mt-4">
+                          {order.status === "PENDING_PAYMENT" ? (
+                            <Button
+                              onClick={() => handleCancelOrder(order.id)}
+                              size="sm"
+                              variant="outline"
+                              className="text-red-600 border-red-200 hover:bg-red-50 font-bold rounded-lg"
+                            >
+                              Batalkan Pesanan
+                            </Button>
+                          ) : order.status === "PROCESSING" ? (
+                            <div className="bg-emerald-50 border border-emerald-100 text-emerald-700 px-4 py-2 rounded-xl text-xs font-black flex items-center gap-2">
+                              <div className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse" />
+                              PESANAN ANDA SEDANG DI PROSES & TIDAK DAPAT DIBATALKAN
+                            </div>
+                          ) : order.status === "SHIPPED" ? (
+                            <div className="bg-blue-50 border border-blue-100 text-blue-700 px-4 py-2 rounded-xl text-xs font-black flex items-center gap-2">
+                              <Truck className="w-4 h-4" />
+                              PESANAN DALAM PENGIRIMAN
+                            </div>
+                          ) : order.status === "CANCELLED" ? (
+                            <Button
+                              onClick={() => handleDeleteOrder(order.id)}
+                              size="sm"
+                              variant="ghost"
+                              className="text-slate-400 hover:text-red-600 font-bold"
+                            >
+                              <Trash2 className="w-4 h-4 mr-1" />
+                              Hapus Riwayat
+                            </Button>
+                          ) : null}
+                        </div>
                         {order.status === "COMPLETED" && (
                           <Button
                             onClick={() => handleOrderAgain(order.id)}

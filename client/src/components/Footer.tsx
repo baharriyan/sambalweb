@@ -28,8 +28,18 @@ export default function Footer() {
 
   if (isLoading) {
     return (
-      <footer className="bg-gray-900 text-gray-300 py-8 text-center">
-        <Loader2 className="w-6 h-6 animate-spin mx-auto text-red-400" />
+      <footer className="bg-gray-900 text-gray-300">
+        <div className="max-w-7xl mx-auto px-4 py-16">
+          <div className="grid md:grid-cols-4 gap-8 mb-12">
+            {[...Array(4)].map((_, i) => (
+              <div key={i} className="space-y-3">
+                <div className="h-5 w-32 bg-gray-800 rounded animate-shimmer bg-gradient-to-r from-gray-800 via-gray-700 to-gray-800" />
+                <div className="h-4 w-full bg-gray-800 rounded animate-shimmer bg-gradient-to-r from-gray-800 via-gray-700 to-gray-800" />
+                <div className="h-4 w-3/4 bg-gray-800 rounded animate-shimmer bg-gradient-to-r from-gray-800 via-gray-700 to-gray-800" />
+              </div>
+            ))}
+          </div>
+        </div>
       </footer>
     );
   }
