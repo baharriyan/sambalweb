@@ -11,7 +11,7 @@ export const addresses = mysqlTable("addresses", {
 	city: varchar({ length: 100 }).notNull(),
 	postalCode: varchar({ length: 10 }),
 	isPrimary: tinyint().default(0).notNull(),
-	createdAt: timestamp({ mode: 'string' }).default(sql`(now())`).notNull(),
+	createdAt: timestamp({ mode: 'date' }).default(sql`(now())`).notNull(),
 },
 (table) => [
 	primaryKey({ columns: [table.id], name: "addresses_id"}),
@@ -22,8 +22,8 @@ export const cartItems = mysqlTable("cartItems", {
 	userId: int().notNull(),
 	productId: int().notNull(),
 	quantity: int().default(1).notNull(),
-	createdAt: timestamp({ mode: 'string' }).default(sql`(now())`).notNull(),
-	updatedAt: timestamp({ mode: 'string' }).default(sql`(now())`).onUpdateNow().notNull(),
+	createdAt: timestamp({ mode: 'date' }).default(sql`(now())`).notNull(),
+	updatedAt: timestamp({ mode: 'date' }).default(sql`(now())`).onUpdateNow().notNull(),
 },
 (table) => [
 	primaryKey({ columns: [table.id], name: "cartItems_id"}),
@@ -37,12 +37,12 @@ export const coupons = mysqlTable("coupons", {
 	discountValue: int().notNull(),
 	minOrderAmount: int().default(0).notNull(),
 	maxDiscountAmount: int(),
-	startDate: datetime({ mode: 'string'}),
-	endDate: datetime({ mode: 'string'}),
+	startDate: datetime({ mode: 'date' }),
+	endDate: datetime({ mode: 'date' }),
 	usageLimit: int(),
 	usageCount: int().default(0).notNull(),
 	isActive: tinyint().default(1).notNull(),
-	createdAt: timestamp({ mode: 'string' }).default(sql`(now())`).notNull(),
+	createdAt: timestamp({ mode: 'date' }).default(sql`(now())`).notNull(),
 },
 (table) => [
 	primaryKey({ columns: [table.id], name: "coupons_id"}),
@@ -57,7 +57,7 @@ export const orderItems = mysqlTable("orderItems", {
 	quantity: int().notNull(),
 	unitPrice: int().notNull(),
 	subtotal: int().notNull(),
-	createdAt: timestamp({ mode: 'string' }).default(sql`(now())`).notNull(),
+	createdAt: timestamp({ mode: 'date' }).default(sql`(now())`).notNull(),
 },
 (table) => [
 	primaryKey({ columns: [table.id], name: "orderItems_id"}),
@@ -84,8 +84,8 @@ export const orders = mysqlTable("orders", {
 	total: int().notNull(),
 	status: mysqlEnum(['PENDING_PAYMENT','PROCESSING','SHIPPED','COMPLETED','CANCELLED']).default('PENDING_PAYMENT').notNull(),
 	notes: text(),
-	createdAt: timestamp({ mode: 'string' }).default(sql`(now())`).notNull(),
-	updatedAt: timestamp({ mode: 'string' }).default(sql`(now())`).onUpdateNow().notNull(),
+	createdAt: timestamp({ mode: 'date' }).default(sql`(now())`).notNull(),
+	updatedAt: timestamp({ mode: 'date' }).default(sql`(now())`).onUpdateNow().notNull(),
 },
 (table) => [
 	primaryKey({ columns: [table.id], name: "orders_id"}),
@@ -102,8 +102,8 @@ export const products = mysqlTable("products", {
 	spiceLevel: int().default(1).notNull(),
 	imageUrl: text(),
 	isActive: tinyint().default(1).notNull(),
-	createdAt: timestamp({ mode: 'string' }).default(sql`(now())`).notNull(),
-	updatedAt: timestamp({ mode: 'string' }).default(sql`(now())`).onUpdateNow().notNull(),
+	createdAt: timestamp({ mode: 'date' }).default(sql`(now())`).notNull(),
+	updatedAt: timestamp({ mode: 'date' }).default(sql`(now())`).onUpdateNow().notNull(),
 },
 (table) => [
 	primaryKey({ columns: [table.id], name: "products_id"}),
@@ -114,7 +114,7 @@ export const siteSettings = mysqlTable("siteSettings", {
 	id: int().autoincrement().notNull(),
 	key: varchar({ length: 255 }).notNull(),
 	value: text().notNull(),
-	updatedAt: timestamp({ mode: 'string' }).default(sql`(now())`).onUpdateNow().notNull(),
+	updatedAt: timestamp({ mode: 'date' }).default(sql`(now())`).onUpdateNow().notNull(),
 },
 (table) => [
 	primaryKey({ columns: [table.id], name: "siteSettings_id"}),
@@ -131,9 +131,9 @@ export const users = mysqlTable("users", {
 	passwordHash: varchar({ length: 255 }),
 	role: mysqlEnum(['user','admin']).default('user').notNull(),
 	isBlocked: tinyint().default(0).notNull(),
-	createdAt: timestamp({ mode: 'string' }).default(sql`(now())`).notNull(),
-	updatedAt: timestamp({ mode: 'string' }).default(sql`(now())`).onUpdateNow().notNull(),
-	lastSignedIn: timestamp({ mode: 'string' }).default(sql`(now())`).notNull(),
+	createdAt: timestamp({ mode: 'date' }).default(sql`(now())`).notNull(),
+	updatedAt: timestamp({ mode: 'date' }).default(sql`(now())`).onUpdateNow().notNull(),
+	lastSignedIn: timestamp({ mode: 'date' }).default(sql`(now())`).notNull(),
 },
 (table) => [
 	primaryKey({ columns: [table.id], name: "users_id"}),
@@ -145,8 +145,22 @@ export const wishlists = mysqlTable("wishlists", {
 	id: int().autoincrement().notNull(),
 	userId: int().notNull(),
 	productId: int().notNull(),
-	createdAt: timestamp({ mode: 'string' }).default(sql`(now())`).notNull(),
+	createdAt: timestamp({ mode: 'date' }).default(sql`(now())`).notNull(),
 },
 (table) => [
 	primaryKey({ columns: [table.id], name: "wishlists_id"}),
 ]);
+
+export type User = typeof users.$inferSelect;
+export type InsertUser = typeof users.$inferInsert;
+export type Product = typeof products.$inferSelect;
+export type InsertProduct = typeof products.$inferInsert;
+export type Order = typeof orders.$inferSelect;
+export type InsertOrder = typeof orders.$inferInsert;
+export type Address = typeof addresses.$inferSelect;
+export type CartItem = typeof cartItems.$inferSelect;
+export type OrderItem = typeof orderItems.$inferSelect;
+export type Coupon = typeof coupons.$inferSelect;
+export type InsertCoupon = typeof coupons.$inferInsert;
+export type SiteSetting = typeof siteSettings.$inferSelect;
+export type Wishlist = typeof wishlists.$inferSelect;

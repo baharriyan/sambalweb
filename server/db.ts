@@ -207,7 +207,7 @@ export async function getProducts(filters?: { isActive?: boolean; search?: strin
   const conditions: SQL[] = [];
   
   if (filters?.isActive !== undefined) {
-    conditions.push(eq(products.isActive, filters.isActive));
+    conditions.push(eq(products.isActive, filters.isActive ? 1 : 0));
   }
   
   if (filters?.search) {
@@ -462,14 +462,14 @@ export async function blockUser(userId: number) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
   
-  return db.update(users).set({ isBlocked: true }).where(eq(users.id, userId));
+  return db.update(users).set({ isBlocked: 1 }).where(eq(users.id, userId));
 }
 
 export async function unblockUser(userId: number) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
   
-  return db.update(users).set({ isBlocked: false }).where(eq(users.id, userId));
+  return db.update(users).set({ isBlocked: 0 }).where(eq(users.id, userId));
 }
 
 export async function getAllUsers(limit: number = 100, offset: number = 0) {
@@ -532,7 +532,7 @@ export async function getActiveProductsCount() {
   if (!db) return 0;
   
   const result = await db.select({ count: sql`COUNT(*)` }).from(products)
-    .where(eq(products.isActive, true));
+    .where(eq(products.isActive, 1));
   
   return Number(result[0]?.count) || 0;
 }
@@ -550,7 +550,7 @@ export async function getLowStockProducts(threshold: number = 10) {
   if (!db) return [];
   
   return db.select().from(products)
-    .where(and(eq(products.isActive, true), lte(products.stock, threshold)))
+    .where(and(eq(products.isActive, 1), lte(products.stock, threshold)))
     .orderBy(asc(products.stock));
 }
 

@@ -54,7 +54,7 @@ describe("E-Commerce API Tests", () => {
           price: 25000,
           stock: 50,
           spiceLevel: 2,
-          isActive: true,
+          isActive: 1,
         },
       ];
 
@@ -73,7 +73,7 @@ describe("E-Commerce API Tests", () => {
         price: 25000,
         stock: 50,
         spiceLevel: 2,
-        isActive: true,
+        isActive: 1,
       };
 
       vi.mocked(db.getProductBySlug as any).mockResolvedValue(
@@ -92,7 +92,7 @@ describe("E-Commerce API Tests", () => {
         price: 30000,
         stock: 35,
         spiceLevel: 3,
-        isActive: true,
+        isActive: 1,
       };
 
       vi.mocked(db.createProduct).mockResolvedValue({ insertId: 2 } as any);
@@ -269,7 +269,7 @@ describe("E-Commerce API Tests", () => {
           fullName: "John Doe",
           address: "Jl. Test No. 1",
           city: "Jakarta",
-          isPrimary: true,
+          isPrimary: 1,
         },
       ];
 
@@ -298,8 +298,8 @@ describe("E-Commerce API Tests", () => {
     it("should update address", async () => {
       vi.mocked(db.updateAddress).mockResolvedValue({} as any);
 
-      await db.updateAddress(1, { isPrimary: true });
-      expect(db.updateAddress).toHaveBeenCalledWith(1, { isPrimary: true });
+      await db.updateAddress(1, { isPrimary: 1 });
+      expect(db.updateAddress).toHaveBeenCalledWith(1, { isPrimary: 1 });
     });
 
     it("should delete address", async () => {

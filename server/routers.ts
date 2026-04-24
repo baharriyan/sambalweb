@@ -381,7 +381,7 @@ export const appRouter = router({
           stock: input.stock,
           spiceLevel: input.spiceLevel,
           imageUrl: input.imageUrl,
-          isActive: true,
+          isActive: 1,
         });
       }),
 
@@ -422,7 +422,10 @@ export const appRouter = router({
           }
         }
 
-        return db.updateProduct(id, data);
+        return db.updateProduct(id, {
+          ...data,
+          isActive: data.isActive === undefined ? undefined : (data.isActive ? 1 : 0),
+        });
       }),
 
     delete: adminProcedure
@@ -644,7 +647,7 @@ export const appRouter = router({
               .where(
                 and(
                   eq(db.coupons.code, input.couponCode),
-                  eq(db.coupons.isActive, true)
+                  eq(db.coupons.isActive, 1)
                 )
               )
               .limit(1);
@@ -1049,6 +1052,7 @@ export const appRouter = router({
         return db.createAddress({
           userId: ctx.user!.id,
           ...input,
+          isPrimary: input.isPrimary ? 1 : 0,
         });
       }),
 
@@ -1079,7 +1083,10 @@ export const appRouter = router({
           });
         }
 
-        return db.updateAddress(addressId, data);
+        return db.updateAddress(addressId, {
+          ...data,
+          isPrimary: data.isPrimary === undefined ? undefined : (data.isPrimary ? 1 : 0),
+        });
       }),
 
     delete: protectedProcedure
@@ -1271,6 +1278,7 @@ export const appRouter = router({
 
         return await drizzle.insert(db.coupons).values({
           ...input,
+          isActive: input.isActive ? 1 : 0,
           startDate: input.startDate ? new Date(input.startDate) : null,
           endDate: input.endDate ? new Date(input.endDate) : null,
         });
